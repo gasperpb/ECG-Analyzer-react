@@ -5,7 +5,6 @@ import Analyzer from './pages/Analyzer'
 import Results from './pages/Results'
 import Header from './components/Header'
 import Navigation from './components/Navigation'
-import DebugHelper from './components/DebugHelper'
 
 function App() {
   const [currentPage, setCurrentPage] = useState('dashboard')
@@ -36,9 +35,6 @@ function App() {
       <main className="container mx-auto px-4 py-8">
         {renderPage()}
       </main>
-      
-      {/* Debug Helper - Visible during development */}
-      <DebugHelper isOpen={false} />
     </div>
   )
 }
