@@ -10,7 +10,10 @@ Uma interface web moderna e responsiva para análise de eletrocardiogramas (ECG)
 - ✅ **Análise de Imagens** - Processa imagens de ECG (PNG, JPG, BMP)
 - ✅ **Dados Simulados** - Geração de exemplos de ECG para testes
 - ✅ **Análise em Tempo Real** - Integração com API Backend
-- ✅ **Relatórios Completos** - Exibição de diagnósticos e recomendações
+- ✅ **Sinais Vitais Avançados** - Coleta opcional de SpO2, Glicose, PA, Temperatura, FR, Hemoglobina
+- ✅ **38+ Diagnósticos** - Detecção integrada de doenças cardíacas e sistêmicas
+- ✅ **Correlações Multissistêmicas** - Análise de relações entre múltiplas métricas
+- ✅ **Relatórios Completos** - Exibição de diagnósticos, risco e recomendações
 
 ## 🚀 Quick Start
 
@@ -90,6 +93,40 @@ O arquivo `vite.config.js` já está configurado para fazer proxy das requisiç�
 | Axios | 1.6.0 | HTTP client |
 | lucide-react | 0.263.0 | Ícones |
 
+## 📊 Capacidades de Diagnóstico
+
+### Diagnósticos por ECG Puro: 10
+- Bradicardia, Taquicardia, Fibrilação Atrial, Flutter Atrial, Bloqueio AV, QRS Alargado, PR Prolongado, QT Prolongado, Extrassístoles, Ritmo Sinusal Normal
+
+### Diagnósticos por Sinais Vitais: 28
+
+**Oximetria (SpO2):**
+- Hipoxemia, DPOC, Pneumonia, Asma Aguda, Tromboembolismo Pulmonar (TEP)
+
+**Glicose:**
+- Hipoglicemia, Hiperglicemia, Diabetes Tipo 1, Diabetes Tipo 2, Cetoacidose Diabética
+
+**Pressão Arterial:**
+- Crise Hipertensiva, Hipertensão Estágio 2, Pré-eclâmpsia, Hipotensão, Choque
+
+**Temperatura:**
+- Febre Alta, Infecção Viral, Infecção Bacteriana, Hipotermia, Possível Sepse
+
+**Hemoglobina:**
+- Anemia Ferropriva, Deficiência B12, Anemia por Sangramento, Policitemia
+
+**Frequência Respiratória:**
+- Bradipneia, Taquipneia, Insuficiência Respiratória, Embolia Pulmonar
+
+### Síndromes Multissistêmicas: 5+
+- Miocardiopatia Hipertensiva (PA↑ + ECG↑)
+- Alteração Metabólica com Arritmia (Glicose± + Arritmia)
+- Insuficiência Respiratória com Compensação (SpO2↓ + Taquicardia)
+- Taquicardia Compensatória por Anemia (Hgb↓ + Taquicardia)
+- Possível Sepse (Temp↑ + PA↓ + Taquicardia)
+
+**Total: 38+ Doenças e Síndromes Detectáveis**
+
 ## 📊 Componentes Principais
 
 ### Dashboard
@@ -107,9 +144,11 @@ O arquivo `vite.config.js` já está configurado para fazer proxy das requisiç�
 ### Results
 - Exibição de métricas principais (BPM, Ritmo, QT, PR)
 - Gráfico do ECG analisado
-- Lista de diagnósticos identificados
-- Interpretação clínica
-- Recomendações
+- Visualização dos sinais vitais capturados
+- Nível de risco geral (Crítico, Atenção, Normal)
+- Lista de diagnósticos identificados e priorizados
+- Interpretação clínica integrada
+- Recomendações contextualizadas
 - Opções para download e compartilhamento
 
 ## 🔌 API Integration

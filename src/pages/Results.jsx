@@ -3,9 +3,13 @@ import { ArrowLeft, Download, Share2, Heart } from 'lucide-react'
 import ECGChart from '../components/ECGChart'
 import DiagnosticsCard from '../components/DiagnosticsCard'
 import StatsCard from '../components/StatsCard'
+import ShareModal from '../components/ShareModal'
+import { generatePDF } from '../services/shareService'
 
 export default function Results({ data, onBack }) {
   const [expandedDiagnosis, setExpandedDiagnosis] = useState(null)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [downloadLoading, setDownloadLoading] = useState(false)
 
   if (!data) {
     return (
@@ -21,14 +25,20 @@ export default function Results({ data, onBack }) {
     )
   }
 
-  const handleDownloadPDF = () => {
-    // Implementar download de PDF
-    alert('Funcionalidade de download será implementada em breve')
+  const handleDownloadPDF = async () => {
+    try {
+      setDownloadLoading(true)
+      await generatePDF(data)
+    } catch (error) {
+      alert('Erro ao gerar PDF. Tente novamente.')
+      console.error('Erro ao gerar PDF:', error)
+    } finally {
+      setDownloadLoading(false)
+    }
   }
 
   const handleShare = () => {
-    // Implementar compartilhamento
-    alert('Funcionalidade de compartilhamento será implementada em breve')
+    setShowShareModal(true)
   }
 
   // Dados para exemplo (quando a API não retornar dados completos)
@@ -80,10 +90,15 @@ export default function Results({ data, onBack }) {
         <div className="flex gap-3">
           <button
             onClick={handleDownloadPDF}
-            className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg transition-all"
+            disabled={downloadLoading}
+            className={`flex items-center gap-2 font-semibold py-2 px-4 rounded-lg transition-all ${
+              downloadLoading
+                ? 'bg-gray-100 text-gray-500 border border-gray-300 cursor-not-allowed'
+                : 'bg-white border border-gray-300 hover:bg-gray-50 text-gray-700'
+            }`}
           >
             <Download className="w-5 h-5" />
-            <span className="hidden sm:inline">PDF</span>
+            <span className="hidden sm:inline">{downloadLoading ? 'Gerando...' : 'PDF'}</span>
           </button>
           <button
             onClick={handleShare}
@@ -134,6 +149,88 @@ export default function Results({ data, onBack }) {
         <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Traçado de ECG</h3>
           <ECGChart data={data.ecgChart.data} title="ECG Analisado" />
+        </div>
+      )}
+
+      {/* Vital Signs Section */}
+      {data.vitalSignsIncluded && (
+        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">💊 Sinais Vitais Adicionais</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {data.spO2 && (
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-gray-600 text-sm">SpO₂ (Oximetria)</p>
+                <p className="text-2xl font-bold text-blue-600">{data.spO2}%</p>
+              </div>
+            )}
+            {data.glucose && (
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p className="text-gray-600 text-sm">Glicose</p>
+                <p className="text-2xl font-bold text-yellow-600">{data.glucose} mg/dL</p>
+              </div>
+            )}
+            {data.systolic && (
+              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <p className="text-gray-600 text-sm">Pressão Arterial</p>
+                <p className="text-2xl font-bold text-purple-600">{data.systolic}/{data.diastolic}</p>
+              </div>
+            )}
+            {data.temperature && (
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <p className="text-gray-600 text-sm">Temperatura</p>
+                <p className="text-2xl font-bold text-red-600">{data.temperature}°C</p>
+              </div>
+            )}
+            {data.respiratoryRate && (
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-gray-600 text-sm">Freq. Respiratória</p>
+                <p className="text-2xl font-bold text-green-600">{data.respiratoryRate} bpm</p>
+              </div>
+            )}
+            {data.hemoglobin && (
+              <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <p className="text-gray-600 text-sm">Hemoglobina</p>
+                <p className="text-2xl font-bold text-orange-600">{data.hemoglobin} g/dL</p>
+              </div>
+            )}
+            {data.bloodType && (
+              <div className="p-4 bg-pink-50 rounded-lg border border-pink-200">
+                <p className="text-gray-600 text-sm">Tipo Sanguíneo</p>
+                <p className="text-2xl font-bold text-pink-600">{data.bloodType}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Risk Level and Overall Status */}
+      {(data.riskLevel || data.overallSeverity) && (
+        <div className={`rounded-lg shadow-md p-6 border-l-4 ${
+          data.overallSeverity === 'critical' ? 'bg-red-50 border-red-600' :
+          data.overallSeverity === 'warning' ? 'bg-yellow-50 border-yellow-600' :
+          'bg-green-50 border-green-600'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-gray-900">Nível de Risco Geral</p>
+              <p className={`text-sm ${
+                data.overallSeverity === 'critical' ? 'text-red-700' :
+                data.overallSeverity === 'warning' ? 'text-yellow-700' :
+                'text-green-700'
+              }`}>
+                {data.overallSeverity === 'critical' ? '⚠️ Crítico - Busque atenção médica imediatamente' :
+                 data.overallSeverity === 'warning' ? '⚠️ Atenção - Recomenda-se avaliação' :
+                 '✓ Baixo Risco - Resultado normal'}
+              </p>
+            </div>
+            <div className={`text-4xl ${
+              data.overallSeverity === 'critical' ? 'text-red-600' :
+              data.overallSeverity === 'warning' ? 'text-yellow-600' :
+              'text-green-600'
+            }`}>
+              {data.riskLevel === 'high' ? '🔴' : '🟢'}
+            </div>
+          </div>
         </div>
       )}
 
@@ -227,6 +324,11 @@ export default function Results({ data, onBack }) {
           Nova Análise
         </button>
       </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareModal data={data} onClose={() => setShowShareModal(false)} />
+      )}
     </div>
   )
 }

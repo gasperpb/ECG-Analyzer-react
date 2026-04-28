@@ -5,49 +5,33 @@ import ImagePreview from '../components/ImagePreview'
 import OCRTips from '../components/OCRTips'
 import ECGChart from '../components/ECGChart'
 import Loading from '../components/Loading'
+import VitalSignsInput from '../components/VitalSignsInput'
 import { ecgService, generateSimulatedECG, extractECGFromImage } from '../services/api'
+import { analyzeDiagnosis } from '../services/diagnosticEngine'
 
 // Função para gerar análise simulada (fallback quando backend não responde)
-const generateSimulatedAnalysis = (ecgData) => {
-  const bpm = Math.round(60 + Math.random() * 40)
-  const rhythms = ['Sinusal Normal', 'Taquicardia Sinusal', 'Bradicardia', 'Fibrilação Atrial']
-  const rhythm = rhythms[Math.floor(Math.random() * rhythms.length)]
-  
-  const normalRhythm = rhythm === 'Sinusal Normal'
+const generateSimulatedAnalysis = (ecgData, vitalSigns = {}) => {
+  // Usar motor de diagnóstico avançado
+  const advancedAnalysis = analyzeDiagnosis(ecgData, vitalSigns)
   
   return {
-    bpm,
-    rhythm,
-    pr: 160 + Math.random() * 40,
-    qrs: 80 + Math.random() * 40,
-    qt: 400 + Math.random() * 50,
-    interpretation: normalRhythm 
-      ? 'Ritmo cardíaco normal. Não foram identificadas alterações significativas.'
-      : `Padrão ${rhythm} detectado. Recomenda-se avaliação cardiológica adicional.`,
-    recommendations: [
-      'Continuar com acompanhamento regular',
-      'Manter histórico de exames',
-      'Consultar cardiologista em caso de sintomas'
-    ],
-    diagnoses: [
-      {
-        name: rhythm,
-        severity: normalRhythm ? 'normal' : 'warning',
-        description: `Ritmo cardíaco ${rhythm.toLowerCase()} foi detectado`,
-        details: {
-          'Frequência': `${bpm} BPM`,
-          'Intervalo PR': '160ms',
-          'Complexo QRS': '80ms'
-        },
-        recommendation: 'Observar e acompanhar'
-      }
-    ]
+    bpm: ecgData.bpm || 72,
+    rhythm: ecgData.rhythm || 'Sinusal Normal',
+    pr: ecgData.pr || 160,
+    qrs: ecgData.qrs || 80,
+    qt: ecgData.qt || 400,
+    interpretation: advancedAnalysis.summaryInterpretation,
+    recommendations: advancedAnalysis.recommendations,
+    diagnoses: advancedAnalysis.diagnoses,
+    riskLevel: advancedAnalysis.riskLevel,
+    vitalSignsIncluded: Object.keys(vitalSigns).length > 0
   }
 }
 
 export default function Analyzer({ onAnalysisComplete }) {
   const [selectedFile, setSelectedFile] = useState(null)
   const [ecgData, setEcgData] = useState(null)
+  const [vitalSigns, setVitalSigns] = useState({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [analysisMethod, setAnalysisMethod] = useState(null) // 'file', 'simulated'
@@ -162,7 +146,8 @@ export default function Analyzer({ onAnalysisComplete }) {
       const analysisPayload = {
         samplingRate: ecgData.samplingRate || 250,
         duration: ecgData.duration || ecgData.data.length / 250,
-        data: ecgData.data
+        data: ecgData.data,
+        vitalSigns: vitalSigns // Adicionar sinais vitais
       }
 
       console.log('Enviando para análise:', analysisPayload)
@@ -176,13 +161,14 @@ export default function Analyzer({ onAnalysisComplete }) {
         // Adiciona informações do gráfico aos resultados
         results.ecgChart = ecgData
         results.source = ecgData.source || 'Dados do Usuário'
+        results.vitalSignsIncluded = Object.keys(vitalSigns).length > 0
         
         onAnalysisComplete(results)
       } catch (apiError) {
         console.warn('Backend não disponível, usando análise simulada:', apiError.message)
         
-        // Fallback: gerar análise simulada
-        const simulatedResults = generateSimulatedAnalysis(ecgData)
+        // Fallback: gerar análise simulada com sinais vitais
+        const simulatedResults = generateSimulatedAnalysis(ecgData, vitalSigns)
         simulatedResults.ecgChart = ecgData
         simulatedResults.source = ecgData.source || 'Dados do Usuário'
         simulatedResults.isSimulated = true
@@ -314,6 +300,11 @@ export default function Analyzer({ onAnalysisComplete }) {
       {/* Loading State */}
       {loading && (
         <Loading message="Processando dados de ECG..." />
+      )}
+
+      {/* Vital Signs Input */}
+      {ecgData && !loading && (
+        <VitalSignsInput onUpdate={setVitalSigns} />
       )}
 
       {/* Action Buttons */}

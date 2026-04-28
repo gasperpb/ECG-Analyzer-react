@@ -1,5 +1,5 @@
 import React from 'react'
-import { Activity, Zap, BarChart3, Heart } from 'lucide-react'
+import { Activity, Zap, BarChart3, Heart, TrendingUp } from 'lucide-react'
 import StatsCard from '../components/StatsCard'
 
 export default function Dashboard({ onNavigate }) {
@@ -7,22 +7,22 @@ export default function Dashboard({ onNavigate }) {
     {
       icon: Activity,
       title: 'Análise em Tempo Real',
-      description: 'Processa dados de ECG com análise instantânea e diagnósticos precisos'
+      description: 'Processa ECG com análise instantânea, sinais vitais e diagnósticos integrados'
     },
     {
       icon: Zap,
-      title: '45+ Diagnósticos',
-      description: 'Detecção de anomalias, arritmias, infartos e síndromes cardíacas'
+      title: '38+ Diagnósticos Avançados',
+      description: 'Detecção de anomalias cardíacas + doenças sistêmicas + correlações'
     },
     {
       icon: BarChart3,
       title: 'Gráficos Interativos',
-      description: 'Visualize ECG com gráficos de alta definição e análise detalhada'
+      description: 'Visualize ECG, sinais vitais e correlações com gráficos de alta definição'
     },
     {
       icon: Heart,
-      title: 'Interpretação Clínica',
-      description: 'Relatórios completos com recomendações baseadas em dados cardíacos'
+      title: 'Interpretação Integrada',
+      description: 'Relatórios com análise ECG + sinais vitais + nível de risco geral'
     }
   ]
 
@@ -57,22 +57,22 @@ export default function Dashboard({ onNavigate }) {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <StatsCard
             icon={Heart}
-            title="Diagnósticos"
-            value="45+"
+            title="Diagnósticos Totais"
+            value="38+"
             color="red"
           />
           <StatsCard
-            icon={Activity}
+            icon={TrendingUp}
+            title="Sinais Vitais"
+            value="10"
+            color="orange"
+          />
+          <StatsCard
+            icon={Zap}
             title="Taxa de Precisão"
             value="98.5%"
             unit="%"
             color="green"
-          />
-          <StatsCard
-            icon={Zap}
-            title="Análises Processadas"
-            value="1,250+"
-            color="medical"
           />
           <StatsCard
             icon={BarChart3}
@@ -135,6 +135,61 @@ export default function Dashboard({ onNavigate }) {
         </div>
       </div>
 
+      {/* Vital Signs Diagnostics */}
+      <div className="bg-gradient-to-r from-medical-50 to-blue-50 border-2 border-medical-300 rounded-lg p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <TrendingUp className="w-8 h-8 text-medical-600" />
+          <h3 className="text-2xl font-bold text-gray-900">💊 Análise Integrada com Sinais Vitais</h3>
+        </div>
+        
+        <p className="text-gray-700 mb-6 text-lg font-semibold">
+          Agora com 10 sinais vitais opcionais, detectamos 28+ condições adicionais:
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white p-4 rounded-lg border-l-4 border-blue-500">
+            <p className="font-bold text-blue-700 mb-2">🫁 Oximetria (SpO2)</p>
+            <p className="text-sm text-gray-600">Hipoxemia, DPOC, Pneumonia, Asma, TEP</p>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg border-l-4 border-yellow-500">
+            <p className="font-bold text-yellow-700 mb-2">🍬 Glicose</p>
+            <p className="text-sm text-gray-600">Hipoglicemia, Diabetes Tipo 1/2, Cetoacidose</p>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg border-l-4 border-purple-500">
+            <p className="font-bold text-purple-700 mb-2">💉 Pressão Arterial</p>
+            <p className="text-sm text-gray-600">Hipertensão, Hipotensão, Crise Hipertensiva</p>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg border-l-4 border-red-500">
+            <p className="font-bold text-red-700 mb-2">🌡️ Temperatura</p>
+            <p className="text-sm text-gray-600">Febre, Hipotermia, Infecções, Sepse</p>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg border-l-4 border-green-500">
+            <p className="font-bold text-green-700 mb-2">💨 Frequência Respiratória</p>
+            <p className="text-sm text-gray-600">Bradipneia, Taquipneia, Insuficiência</p>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg border-l-4 border-orange-500">
+            <p className="font-bold text-orange-700 mb-2">🔴 Hemoglobina</p>
+            <p className="text-sm text-gray-600">Anemia, Policitemia, Deficiência de ferro</p>
+          </div>
+        </div>
+
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-300 rounded-lg">
+          <p className="font-bold text-blue-900 mb-2">✨ Síndromes Multissistêmicas Detectadas:</p>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>• Miocardiopatia Hipertensiva (PA↑ + ECG↑)</li>
+            <li>• Alteração Metabólica com Arritmia (Glicose± + Arritmia)</li>
+            <li>• Insuficiência Respiratória com Compensação (SpO2↓ + Taquicardia)</li>
+            <li>• Taquicardia Compensatória por Anemia (Hgb↓ + Taquicardia)</li>
+            <li>• Possível Sepse (Temp↑ + PA↓ + Taquicardia)</li>
+          </ul>
+        </div>
+      </div>
+
       {/* Quick Actions */}
       <div>
         <h3 className="text-2xl font-bold mb-6 text-gray-900">Ações Rápidas</h3>
@@ -158,13 +213,15 @@ export default function Dashboard({ onNavigate }) {
       <div className="bg-blue-50 border border-blue-300 rounded-lg p-6">
         <h4 className="text-lg font-bold text-blue-900 mb-3">ℹ️ Informações</h4>
         <ul className="text-blue-800 text-sm space-y-2">
-          <li>• Formatos de dados: CSV, JSON, ECG</li>
-          <li>• Formatos de imagem: PNG, JPG, JPEG, BMP</li>
-          <li>• Tamanho máximo de arquivo: 10MB</li>
-          <li>• Taxa de amostragem: 250-500 Hz</li>
-          <li>• Análise de 10-30 segundos de ECG</li>
-          <li>• Processamento de imagens com OCR simples</li>
-          <li>• Todos os dados são processados localmente</li>
+          <li>• <span className="font-semibold">Formatos de dados:</span> CSV, JSON, ECG</li>
+          <li>• <span className="font-semibold">Formatos de imagem:</span> PNG, JPG, JPEG, BMP</li>
+          <li>• <span className="font-semibold">Tamanho máximo de arquivo:</span> 10MB</li>
+          <li>• <span className="font-semibold">Taxa de amostragem:</span> 250-500 Hz</li>
+          <li>• <span className="font-semibold">Análise de:</span> 10-30 segundos de ECG</li>
+          <li>• <span className="font-semibold">Sinais Vitais:</span> 10 métricas opcionais (SpO2, Glicose, PA, Temp, FR, Hgb, Tipo Sanguíneo, etc)</li>
+          <li>• <span className="font-semibold">Diagnósticos detectáveis:</span> 38+ (10 ECG + 28 Vitais)</li>
+          <li>• <span className="font-semibold">Síndromes:</span> 5+ correlações multissistêmicas</li>
+          <li>• <span className="font-semibold">Processamento:</span> Dados processados localmente + Backend</li>
         </ul>
       </div>
     </div>
