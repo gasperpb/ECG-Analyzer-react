@@ -2,6 +2,8 @@
 
 Uma interface web moderna e responsiva para análise de eletrocardiogramas (ECG) construída com **React.js 18**, **Vite**, **Tailwind CSS** e **Chart.js**.
 
+👨‍💻 **Criador:** [Achillesdev](https://github.com/Achillesdev)
+
 ## ✨ Características
 
 - ✅ **Interface Responsiva** - Design moderno com Tailwind CSS
@@ -14,6 +16,18 @@ Uma interface web moderna e responsiva para análise de eletrocardiogramas (ECG)
 - ✅ **38+ Diagnósticos** - Detecção integrada de doenças cardíacas e sistêmicas
 - ✅ **Correlações Multissistêmicas** - Análise de relações entre múltiplas métricas
 - ✅ **Relatórios Completos** - Exibição de diagnósticos, risco e recomendações
+
+---
+
+## 👨‍💻 Sobre o Criador
+
+**Achillesdev** - Desenvolvedor Full Stack especializado em análise de saúde e sistemas médicos inteligentes.
+
+- 🏆 Criador do ECG Analyzer
+- 💡 Inovação em análise cardíaca com IA
+- 🔗 [LinkedIn](#) | [GitHub](#) | [Portfolio](#)
+
+---
 
 ## 🚀 Quick Start
 
@@ -319,9 +333,22 @@ A aplicação é totalmente responsiva com breakpoints:
 
 MIT - Veja LICENSE.md
 
-## 👨‍💼 Autor
+## 👨‍� Desenvolvedor
 
-**Gasper PB** - [GitHub](https://github.com/gasperpb)
+**Achillesdev** - [GitHub](https://github.com/Achillesdev) | [Portfolio](#)
+
+Desenvolvedor Full Stack especializado em sistemas de análise de saúde e diagnóstico inteligente com IA.
+
+---
+
+### 🌟 Contribuições e Créditos
+
+- 🏥 Conceito e Arquitetura: Achillesdev
+- 💻 Frontend React/Vite: Achillesdev  
+- 🎨 Design UI/UX: Achillesdev
+- 🧠 Motor de Diagnóstico: Achillesdev
+- 📊 Integração de Sinais Vitais: Achillesdev
+- 📥 Download e Compartilhamento: Achillesdev
 
 ## 🙏 Agradecimentos
 
@@ -329,3 +356,8 @@ MIT - Veja LICENSE.md
 - Vite team
 - Chart.js contributors
 - Tailwind CSS team
+- Lucide Icons team
+
+---
+
+**Desenvolvido com ❤️ por Achillesdev - 2026**

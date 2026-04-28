@@ -224,6 +224,26 @@ export default function Dashboard({ onNavigate }) {
           <li>• <span className="font-semibold">Processamento:</span> Dados processados localmente + Backend</li>
         </ul>
       </div>
+
+      {/* Footer com Crédito */}
+      <div className="border-t-2 border-gray-200 pt-8 mt-8">
+        <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-6 text-center">
+          <p className="text-gray-600 text-sm mb-2">
+            🏥 <span className="font-semibold">ECG Analyzer</span> - Sistema Inteligente de Análise Cardíaca
+          </p>
+          <p className="text-gray-500 text-xs">
+            Desenvolvido por 
+            <span className="font-bold text-medical-600 ml-1">Achillesdev</span>
+            {' '}|{' '}
+            <span className="text-blue-600 hover:text-blue-700 cursor-pointer">GitHub</span>
+            {' '}|{' '}
+            <span className="text-blue-600 hover:text-blue-700 cursor-pointer">Portfolio</span>
+          </p>
+          <p className="text-gray-400 text-xs mt-3 italic">
+            ⚠️ Para fins educacionais e de referência. Não substitui avaliação médica profissional.
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

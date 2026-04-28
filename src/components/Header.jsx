@@ -23,9 +23,16 @@ export default function Header({ onNavigation }) {
             </div>
           </div>
           
-          <div className="hidden md:flex items-center gap-2 text-medical-600">
-            <Activity className="w-5 h-5 animate-pulse" />
-            <span className="text-sm font-semibold">Sistema Online</span>
+          <div className="hidden md:flex items-center gap-4">
+            <div className="flex items-center gap-2 text-medical-600">
+              <Activity className="w-5 h-5 animate-pulse" />
+              <span className="text-sm font-semibold">Sistema Online</span>
+            </div>
+            <div className="hidden lg:block h-4 w-px bg-gray-300"></div>
+            <div className="hidden lg:flex items-center gap-1 text-gray-500 text-xs">
+              <span>by</span>
+              <span className="font-bold text-medical-600">Achillesdev</span>
+            </div>
           </div>
         </div>
       </div>
