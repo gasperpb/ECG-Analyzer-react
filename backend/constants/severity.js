@@ -1,0 +1,30 @@
+/**
+ * Níveis de severidade e risco
+ */
+
+export const SEVERITY_LEVELS = {
+  CRITICAL: 'critical',
+  WARNING: 'warning',
+  INFO: 'info',
+  NORMAL: 'normal'
+}
+
+export const SEVERITY_ORDER = {
+  [SEVERITY_LEVELS.CRITICAL]: 0,
+  [SEVERITY_LEVELS.WARNING]: 1,
+  [SEVERITY_LEVELS.INFO]: 2,
+  [SEVERITY_LEVELS.NORMAL]: 3
+}
+
+export const RISK_LEVELS = {
+  HIGH: 'high',
+  MEDIUM: 'medium',
+  LOW: 'low'
+}
+
+export const SEVERITY_TO_RISK = {
+  [SEVERITY_LEVELS.CRITICAL]: RISK_LEVELS.HIGH,
+  [SEVERITY_LEVELS.WARNING]: RISK_LEVELS.MEDIUM,
+  [SEVERITY_LEVELS.INFO]: RISK_LEVELS.LOW,
+  [SEVERITY_LEVELS.NORMAL]: RISK_LEVELS.LOW
+}

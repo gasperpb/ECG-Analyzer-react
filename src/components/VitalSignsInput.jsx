@@ -11,6 +11,13 @@ export default function VitalSignsInput({ onUpdate }) {
     temperature: '',       // Temperatura - 36.5-37.5°C
     respiratoryRate: '',   // Frequência Respiratória - 12-20 bpm
     hemoglobin: '',        // Hemoglobina - 13.5-17.5 g/dL (homens)
+    potassium: '',         // Potássio (K+) - 3.5-5.0 mEq/L
+    sodium: '',            // Sódio (Na+) - 135-145 mEq/L
+    magnesium: '',         // Magnésio (Mg++) - 1.7-2.2 mg/dL
+    calcium: '',           // Cálcio (Ca++) - 8.5-10.5 mg/dL
+    tsh: '',               // TSH - 0.4-4.0 mUI/L
+    creatinine: '',        // Creatinina - 0.7-1.3 mg/dL
+    troponin: '',          // Troponina - < 0.04 ng/mL
     bloodType: '',         // Tipo sanguíneo - A, B, AB, O
     medicalHistory: '',    // Histórico médico
     medications: ''        // Medicamentos em uso
@@ -30,7 +37,14 @@ export default function VitalSignsInput({ onUpdate }) {
       diastolic: { min: 30, max: 150, unit: 'mmHg', name: 'Diastólica' },
       temperature: { min: 35, max: 42, unit: '°C', name: 'Temperatura' },
       respiratoryRate: { min: 5, max: 40, unit: 'bpm', name: 'Freq. Respiratória' },
-      hemoglobin: { min: 5, max: 20, unit: 'g/dL', name: 'Hemoglobina' }
+      hemoglobin: { min: 5, max: 20, unit: 'g/dL', name: 'Hemoglobina' },
+      potassium: { min: 1.5, max: 9.0, unit: 'mEq/L', name: 'Potássio (K+)' },
+      sodium: { min: 110, max: 160, unit: 'mEq/L', name: 'Sódio (Na+)' },
+      magnesium: { min: 0.5, max: 5.0, unit: 'mg/dL', name: 'Magnésio (Mg++)' },
+      calcium: { min: 5.0, max: 15.0, unit: 'mg/dL', name: 'Cálcio (Ca++)' },
+      tsh: { min: 0.01, max: 100, unit: 'mUI/L', name: 'TSH' },
+      creatinine: { min: 0.2, max: 15.0, unit: 'mg/dL', name: 'Creatinina' },
+      troponin: { min: 0.0, max: 50.0, unit: 'ng/mL', name: 'Troponina' }
     }
 
     const range = ranges[field]
@@ -71,7 +85,14 @@ export default function VitalSignsInput({ onUpdate }) {
       diastolic: { ideal: [60, 80], warning: [81, 90], danger: [91, 150] },
       temperature: { ideal: [36.5, 37.5], warning: [36.0, 37.9], danger: [35, 42] },
       respiratoryRate: { ideal: [12, 20], warning: [10, 11], danger: [5, 9] },
-      hemoglobin: { ideal: [13.5, 17.5], warning: [12, 13.4], danger: [5, 11] }
+      hemoglobin: { ideal: [13.5, 17.5], warning: [12, 13.4], danger: [5, 11] },
+      potassium: { ideal: [3.5, 5.0], warning: [5.1, 6.0], danger: [6.1, 9.0] },
+      sodium: { ideal: [135, 145], warning: [130, 134], danger: [110, 129] },
+      magnesium: { ideal: [1.7, 2.2], warning: [1.5, 1.6], danger: [0.5, 1.4] },
+      calcium: { ideal: [8.5, 10.5], warning: [8.0, 8.4], danger: [5.0, 7.9] },
+      tsh: { ideal: [0.4, 4.0], warning: [4.1, 10.0], danger: [10.1, 100] },
+      creatinine: { ideal: [0.7, 1.3], warning: [1.4, 2.0], danger: [2.1, 15.0] },
+      troponin: { ideal: [0.0, 0.04], warning: [0.04, 0.5], danger: [0.5, 50.0] }
     }
 
     const range = ranges[field]
@@ -299,6 +320,174 @@ export default function VitalSignsInput({ onUpdate }) {
               </div>
               {errors.hemoglobin && <p className="text-xs text-red-600 mt-1">{errors.hemoglobin}</p>}
               <p className="text-xs text-gray-500 mt-1">Homens: 13.5-17.5 g/dL</p>
+            </div>
+
+            {/* Potássio (K+) */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Potássio (K+) {getStatusIcon('potassium') && <span className={getStatusColor('potassium')}>{getStatusIcon('potassium')}</span>}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="1.5"
+                  max="9.0"
+                  step="0.1"
+                  placeholder="4.5"
+                  value={vitalSigns.potassium}
+                  onChange={(e) => handleChange('potassium', e.target.value)}
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
+                    errors.potassium ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                <span className="text-sm text-gray-500 py-2">mEq/L</span>
+              </div>
+              {errors.potassium && <p className="text-xs text-red-600 mt-1">{errors.potassium}</p>}
+              <p className="text-xs text-gray-500 mt-1">Normal: 3.5-5.0 mEq/L</p>
+            </div>
+
+            {/* Sódio (Na+) */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Sódio (Na+) {getStatusIcon('sodium') && <span className={getStatusColor('sodium')}>{getStatusIcon('sodium')}</span>}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="110"
+                  max="160"
+                  step="0.1"
+                  placeholder="140"
+                  value={vitalSigns.sodium}
+                  onChange={(e) => handleChange('sodium', e.target.value)}
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
+                    errors.sodium ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                <span className="text-sm text-gray-500 py-2">mEq/L</span>
+              </div>
+              {errors.sodium && <p className="text-xs text-red-600 mt-1">{errors.sodium}</p>}
+              <p className="text-xs text-gray-500 mt-1">Normal: 135-145 mEq/L</p>
+            </div>
+
+            {/* Magnésio (Mg++) */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Magnésio (Mg++) {getStatusIcon('magnesium') && <span className={getStatusColor('magnesium')}>{getStatusIcon('magnesium')}</span>}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="0.5"
+                  max="5.0"
+                  step="0.1"
+                  placeholder="2.0"
+                  value={vitalSigns.magnesium}
+                  onChange={(e) => handleChange('magnesium', e.target.value)}
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
+                    errors.magnesium ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                <span className="text-sm text-gray-500 py-2">mg/dL</span>
+              </div>
+              {errors.magnesium && <p className="text-xs text-red-600 mt-1">{errors.magnesium}</p>}
+              <p className="text-xs text-gray-500 mt-1">Normal: 1.7-2.2 mg/dL</p>
+            </div>
+
+            {/* Cálcio (Ca++) */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Cálcio (Ca++) {getStatusIcon('calcium') && <span className={getStatusColor('calcium')}>{getStatusIcon('calcium')}</span>}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="5.0"
+                  max="15.0"
+                  step="0.1"
+                  placeholder="9.5"
+                  value={vitalSigns.calcium}
+                  onChange={(e) => handleChange('calcium', e.target.value)}
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
+                    errors.calcium ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                <span className="text-sm text-gray-500 py-2">mg/dL</span>
+              </div>
+              {errors.calcium && <p className="text-xs text-red-600 mt-1">{errors.calcium}</p>}
+              <p className="text-xs text-gray-500 mt-1">Normal: 8.5-10.5 mg/dL</p>
+            </div>
+
+            {/* TSH */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                TSH {getStatusIcon('tsh') && <span className={getStatusColor('tsh')}>{getStatusIcon('tsh')}</span>}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="0.01"
+                  max="100"
+                  step="0.01"
+                  placeholder="2.5"
+                  value={vitalSigns.tsh}
+                  onChange={(e) => handleChange('tsh', e.target.value)}
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
+                    errors.tsh ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                <span className="text-sm text-gray-500 py-2">mUI/L</span>
+              </div>
+              {errors.tsh && <p className="text-xs text-red-600 mt-1">{errors.tsh}</p>}
+              <p className="text-xs text-gray-500 mt-1">Normal: 0.4-4.0 mUI/L</p>
+            </div>
+
+            {/* Creatinina */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Creatinina {getStatusIcon('creatinine') && <span className={getStatusColor('creatinine')}>{getStatusIcon('creatinine')}</span>}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="0.2"
+                  max="15.0"
+                  step="0.01"
+                  placeholder="1.0"
+                  value={vitalSigns.creatinine}
+                  onChange={(e) => handleChange('creatinine', e.target.value)}
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
+                    errors.creatinine ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                <span className="text-sm text-gray-500 py-2">mg/dL</span>
+              </div>
+              {errors.creatinine && <p className="text-xs text-red-600 mt-1">{errors.creatinine}</p>}
+              <p className="text-xs text-gray-500 mt-1">Normal: 0.7-1.3 mg/dL</p>
+            </div>
+
+            {/* Troponina */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Troponina {getStatusIcon('troponin') && <span className={getStatusColor('troponin')}>{getStatusIcon('troponin')}</span>}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="0.0"
+                  max="50.0"
+                  step="0.001"
+                  placeholder="0.02"
+                  value={vitalSigns.troponin}
+                  onChange={(e) => handleChange('troponin', e.target.value)}
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
+                    errors.troponin ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                <span className="text-sm text-gray-500 py-2">ng/mL</span>
+              </div>
+              {errors.troponin && <p className="text-xs text-red-600 mt-1">{errors.troponin}</p>}
+              <p className="text-xs text-gray-500 mt-1">Normal: &lt; 0.04 ng/mL</p>
             </div>
 
             {/* Tipo Sanguíneo */}

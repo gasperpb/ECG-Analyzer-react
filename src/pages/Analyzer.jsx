@@ -6,6 +6,7 @@ import OCRTips from '../components/OCRTips'
 import ECGChart from '../components/ECGChart'
 import Loading from '../components/Loading'
 import VitalSignsInput from '../components/VitalSignsInput'
+import ECGFeaturesInput from '../components/ECGFeaturesInput'
 import { ecgService, generateSimulatedECG, extractECGFromImage } from '../services/api'
 import { analyzeDiagnosis } from '../services/diagnosticEngine'
 
@@ -32,6 +33,7 @@ export default function Analyzer({ onAnalysisComplete }) {
   const [selectedFile, setSelectedFile] = useState(null)
   const [ecgData, setEcgData] = useState(null)
   const [vitalSigns, setVitalSigns] = useState({})
+  const [ecgFeatures, setEcgFeatures] = useState({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [analysisMethod, setAnalysisMethod] = useState(null) // 'file', 'simulated'
@@ -147,7 +149,8 @@ export default function Analyzer({ onAnalysisComplete }) {
         samplingRate: ecgData.samplingRate || 250,
         duration: ecgData.duration || ecgData.data.length / 250,
         data: ecgData.data,
-        vitalSigns: vitalSigns // Adicionar sinais vitais
+        vitalSigns: vitalSigns,
+        ecgFeatures: ecgFeatures // Adicionar características do ECG
       }
 
       console.log('Enviando para análise:', analysisPayload)
@@ -305,6 +308,11 @@ export default function Analyzer({ onAnalysisComplete }) {
       {/* Vital Signs Input */}
       {ecgData && !loading && (
         <VitalSignsInput onUpdate={setVitalSigns} />
+      )}
+
+      {/* ECG Features Input */}
+      {ecgData && !loading && (
+        <ECGFeaturesInput onUpdate={setEcgFeatures} />
       )}
 
       {/* Action Buttons */}

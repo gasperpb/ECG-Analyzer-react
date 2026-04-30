@@ -1,199 +1,74 @@
-import { 
-  analyzeECG, 
-  analyzeVitalSigns, 
-  analyzeCombinedConditions 
-} from '../models/diagnosticEngine.js'
+import ECGService from '../services/ecgService.js'
+import { validateECGData, validateVitalSigns } from '../validators/ecgValidator.js'
+import logger from '../utils/logger.js'
 
+/**
+ * Analisar dados de ECG
+ * POST /api/ecg/analyze
+ */
 export async function analyzeECGData(req, res) {
   try {
-    const { samplingRate, duration, data, vitalSigns } = req.body
-
-    if (!data || !Array.isArray(data) || data.length === 0) {
+    // Validar requisição
+    const validation = validateECGData(req.body)
+    if (!validation.valid) {
+      logger.warn(`Validação falhou: ${validation.errors.join(', ')}`)
       return res.status(400).json({
+        success: false,
         error: 'Dados de ECG inválidos',
-        message: 'Array de dados vazio ou não fornecido'
+        errors: validation.errors,
+        timestamp: new Date().toISOString()
       })
     }
 
-    // Análise de ECG
-    const ecgAnalysis = analyzeECG(data)
-
-    // Análise de sinais vitais se fornecidos
-    let vitalSignsAnalysis = { diagnoses: [] }
-    let combinedAnalysis = { diagnoses: [] }
-
-    if (vitalSigns && Object.keys(vitalSigns).length > 0) {
-      vitalSignsAnalysis = analyzeVitalSigns(vitalSigns)
-      combinedAnalysis = analyzeCombinedConditions(ecgAnalysis, vitalSigns)
-    }
-
-    // Combinar todos os diagnósticos
-    const allDiagnoses = [
-      ...ecgAnalysis.diagnoses,
-      ...vitalSignsAnalysis.diagnoses,
-      ...combinedAnalysis.diagnoses
-    ]
-
-    // Remover duplicatas
-    const uniqueDiagnoses = []
-    const seenNames = new Set()
-    for (const diagnosis of allDiagnoses) {
-      if (!seenNames.has(diagnosis.name)) {
-        uniqueDiagnoses.push(diagnosis)
-        seenNames.add(diagnosis.name)
+    // Validar sinais vitais se fornecidos
+    if (req.body.vitalSigns) {
+      const vitalSignsValidation = validateVitalSigns(req.body.vitalSigns)
+      if (!vitalSignsValidation.valid) {
+        logger.warn(`Validação de sinais vitais falhou: ${vitalSignsValidation.errors.join(', ')}`)
+        return res.status(400).json({
+          success: false,
+          error: 'Sinais vitais inválidos',
+          errors: vitalSignsValidation.errors,
+          timestamp: new Date().toISOString()
+        })
       }
     }
 
-    // Ordenar por severidade
-    const severityOrder = { critical: 0, warning: 1, info: 2, normal: 3 }
-    uniqueDiagnoses.sort((a, b) => 
-      (severityOrder[a.severity] || 4) - (severityOrder[b.severity] || 4)
-    )
+    // Executar análise
+    const result = ECGService.analyzeECGData(req.body)
 
-    // Determinar risco geral
-    const hasCritical = uniqueDiagnoses.some(d => d.severity === 'critical')
-    const hasWarning = uniqueDiagnoses.some(d => d.severity === 'warning')
-    const overallSeverity = hasCritical ? 'critical' : hasWarning ? 'warning' : 'normal'
-    const riskLevel = hasCritical ? 'high' : hasWarning ? 'medium' : 'low'
-
-    // Gerar interpretação
-    const interpretation = generateInterpretation(uniqueDiagnoses, vitalSigns)
-
-    // Gerar recomendações
-    const recommendations = generateRecommendations(uniqueDiagnoses, vitalSigns)
-
-    // Resposta completa
-    const result = {
-      success: true,
-      timestamp: new Date().toISOString(),
-      analysis: {
-        bpm: ecgAnalysis.bpm,
-        rhythm: ecgAnalysis.rhythm,
-        qt: ecgAnalysis.qtInterval,
-        pr: ecgAnalysis.prInterval,
-        qrs: ecgAnalysis.qrsWidth
-      },
-      vitalSigns: vitalSigns || {},
-      diagnoses: uniqueDiagnoses,
-      interpretation: interpretation,
-      recommendations: recommendations,
-      overallSeverity: overallSeverity,
-      riskLevel: riskLevel,
-      vitalSignsIncluded: vitalSigns && Object.keys(vitalSigns).length > 0,
-      ecgChart: {
-        data: data,
-        samplingRate: samplingRate || 250,
-        duration: duration || (data.length / 250)
-      },
-      source: 'Backend Node.js'
-    }
-
+    logger.success(`ECG analisado com sucesso - ${result.diagnoses.length} diagnósticos`)
     res.json(result)
   } catch (error) {
-    console.error('Erro na análise de ECG:', error)
+    logger.error('Erro na análise de ECG', error)
     res.status(500).json({
+      success: false,
       error: 'Erro ao processar ECG',
-      message: error.message
+      message: error.message,
+      timestamp: new Date().toISOString()
     })
   }
 }
 
-export async function getSimulatedData(req, res) {
+/**
+ * Obter dados simulados de ECG
+ * GET /api/ecg/simulated
+ */
+export function getSimulatedData(req, res) {
   try {
-    // Gerar dados simulados de ECG
-    const samplingRate = 250 // Hz
-    const duration = 10 // segundos
-    const dataPoints = samplingRate * duration
+    const samplingRate = parseInt(req.query.samplingRate) || 250
+    const duration = parseInt(req.query.duration) || 10
 
-    const ecgData = []
-    for (let i = 0; i < dataPoints; i++) {
-      const t = i / samplingRate
-      // Padrão realista de ECG com complexo QRS
-      const baseline = 0.1
-      const heartbeat = (t % 1) < 0.3 ? Math.sin((t % 1) * Math.PI / 0.3) * 0.3 : 0
-      const noise = (Math.random() - 0.5) * 0.05
-      const value = baseline + heartbeat + noise
-      ecgData.push(value)
-    }
-
-    res.json({
-      success: true,
-      samplingRate: samplingRate,
-      duration: duration,
-      data: ecgData,
-      message: 'Dados simulados gerados com sucesso'
-    })
+    const result = ECGService.generateSimulatedData(samplingRate, duration)
+    logger.success(`Dados simulados gerados - ${result.dataPoints} pontos`)
+    res.json(result)
   } catch (error) {
-    console.error('Erro ao gerar dados simulados:', error)
+    logger.error('Erro ao gerar dados simulados', error)
     res.status(500).json({
+      success: false,
       error: 'Erro ao gerar dados simulados',
-      message: error.message
+      message: error.message,
+      timestamp: new Date().toISOString()
     })
   }
-}
-
-function generateInterpretation(diagnoses, vitalSigns) {
-  if (!diagnoses || diagnoses.length === 0) {
-    return 'Análise dentro dos parâmetros normais. Continue com acompanhamento regular.'
-  }
-
-  const criticalDiags = diagnoses.filter(d => d.severity === 'critical')
-  const warningDiags = diagnoses.filter(d => d.severity === 'warning')
-
-  let interpretation = ''
-
-  if (criticalDiags.length > 0) {
-    interpretation += `⚠️ CRÍTICO: ${criticalDiags.map(d => d.name).join(', ')} detectados. `
-  }
-
-  if (warningDiags.length > 0) {
-    interpretation += `⚠️ ATENÇÃO: ${warningDiags.map(d => d.name).join(', ')} detectados. `
-  }
-
-  if (vitalSigns && Object.keys(vitalSigns).length > 0) {
-    interpretation += `Sinais vitais adicionais foram considerados na análise. `
-  }
-
-  interpretation += 'Esta análise é informativa. Consulte um cardiologista para diagnóstico definitivo.'
-
-  return interpretation
-}
-
-function generateRecommendations(diagnoses, vitalSigns) {
-  const recommendations = []
-
-  // Recomendações básicas
-  recommendations.push('Acompanhamento regular com cardiologista')
-
-  // Recomendações por diagnóstico
-  const criticalDiags = diagnoses.filter(d => d.severity === 'critical')
-  if (criticalDiags.length > 0) {
-    recommendations.push('Buscar atendimento médico de emergência')
-  }
-
-  // Recomendações por sinais vitais
-  if (vitalSigns) {
-    if (vitalSigns.spO2 && Number(vitalSigns.spO2) < 92) {
-      recommendations.push('Avaliar função respiratória')
-    }
-    if (vitalSigns.temperature && Number(vitalSigns.temperature) > 38) {
-      recommendations.push('Investigar possível infecção')
-    }
-    if (vitalSigns.systolic && Number(vitalSigns.systolic) > 140) {
-      recommendations.push('Intensificar tratamento anti-hipertensivo')
-    }
-  }
-
-  // Adicionar recomendações específicas dos diagnósticos
-  const specificRecs = [...new Set(diagnoses
-    .filter(d => d.recommendation)
-    .map(d => d.recommendation))]
-  
-  recommendations.push(...specificRecs)
-
-  // Recomendação final
-  recommendations.push('Manter monitoramento regular dos sinais vitais')
-  recommendations.push('Relatar qualquer mudança anormal ao médico')
-
-  return recommendations
 }

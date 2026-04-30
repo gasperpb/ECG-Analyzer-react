@@ -199,6 +199,22 @@ export default function Results({ data, onBack }) {
                 <p className="text-2xl font-bold text-pink-600">{data.bloodType}</p>
               </div>
             )}
+            {data.potassium && (
+              <div className={`p-4 rounded-lg border ${
+                data.potassium > 6.0 ? 'bg-red-50 border-red-200' :
+                data.potassium > 5.0 ? 'bg-yellow-50 border-yellow-200' :
+                data.potassium < 3.0 ? 'bg-red-50 border-red-200' :
+                'bg-green-50 border-green-200'
+              }`}>
+                <p className="text-gray-600 text-sm">Potássio (K+)</p>
+                <p className={`text-2xl font-bold ${
+                  data.potassium > 6.0 ? 'text-red-600' :
+                  data.potassium > 5.0 ? 'text-yellow-600' :
+                  data.potassium < 3.0 ? 'text-red-600' :
+                  'text-green-600'
+                }`}>{data.potassium} mEq/L</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -272,12 +288,19 @@ export default function Results({ data, onBack }) {
           <h3 className="text-lg font-bold text-blue-900 mb-3">💡 Recomendações</h3>
           <ul className="text-blue-800 space-y-2">
             {(Array.isArray(data.recommendations) ? data.recommendations : [data.recommendations]).map(
-              (rec, idx) => (
-                <li key={idx} className="flex gap-2">
-                  <span className="font-bold">•</span>
-                  <span>{rec}</span>
-                </li>
-              )
+              (rec, idx) => {
+                const text = typeof rec === 'string' ? rec : rec.text || ''
+                const priority = typeof rec === 'object' ? (rec.priority || 'normal') : 'normal'
+                const colorClass = priority === 'critical' ? 'text-red-700 font-bold' :
+                                   priority === 'warning' ? 'text-yellow-700 font-semibold' :
+                                   'text-blue-800'
+                return (
+                  <li key={idx} className={`flex gap-2 ${colorClass}`}>
+                    <span className="font-bold">•</span>
+                    <span>{text}</span>
+                  </li>
+                )
+              }
             )}
           </ul>
         </div>
