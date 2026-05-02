@@ -240,6 +240,378 @@ export const generateShareLink = (data) => {
   }
 }
 
+export const generateProfessionalPDF = async (data, options = {}) => {
+  try {
+    const {
+      doctorName = '',
+      doctorCRM = '',
+      institution = '',
+      includeLogo = true,
+      includeSignature = true
+    } = options
+
+    const today = new Date()
+    const dateStr = today.toLocaleDateString('pt-BR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+    const timeStr = today.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    const fileName = `ECG-Laudo-${today.toISOString().split('T')[0]}-${timeStr.replace(':', 'h')}.pdf`
+
+    const severityLabels = {
+      critical: 'CRÍTICO',
+      warning: 'ATENÇÃO',
+      moderate: 'MODERADO',
+      normal: 'NORMAL',
+      low: 'BAIXO RISCO'
+    }
+
+    const severityColors = {
+      critical: '#dc2626',
+      warning: '#f59e0b',
+      moderate: '#f97316',
+      normal: '#10b981',
+      low: '#10b981'
+    }
+
+    let html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; color: #1f2937; line-height: 1.6; }
+          .page { padding: 20px; max-width: 800px; margin: 0 auto; }
+          .header { 
+            background: linear-gradient(135deg, #0284c7 0%, #dc2626 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            position: relative;
+          }
+          .header h1 { font-size: 26px; margin-bottom: 5px; font-weight: 700; }
+          .header .subtitle { font-size: 14px; opacity: 0.9; }
+          .header .meta { 
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            text-align: right;
+            font-size: 12px;
+            opacity: 0.8;
+          }
+          .institution { 
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+          .institution .icon { font-size: 20px; }
+          .institution .name { font-weight: 600; font-size: 16px; color: #111827; }
+          .section { 
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+          }
+          .section-title { 
+            font-size: 18px;
+            font-weight: 700;
+            color: #0284c7;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          .metrics-grid { 
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+          }
+          .metric-card { 
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-left: 4px solid #0284c7;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+          }
+          .metric-card.red { border-left-color: #dc2626; }
+          .metric-card.green { border-left-color: #10b981; }
+          .metric-card.purple { border-left-color: #8b5cf6; }
+          .metric-card .label { font-size: 11px; color: #6b7280; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+          .metric-card .value { font-size: 24px; font-weight: 700; color: #111827; }
+          .metric-card .unit { font-size: 12px; color: #6b7280; font-weight: 400; }
+          .risk-box { 
+            padding: 20px;
+            border-left: 5px solid;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          }
+          .risk-box h3 { margin-bottom: 8px; font-size: 16px; }
+          .risk-box p { margin: 0; font-size: 14px; }
+          .diagnosis-card {
+            padding: 15px;
+            border-left: 4px solid;
+            background: #f9fafb;
+            border-radius: 6px;
+            margin-bottom: 12px;
+          }
+          .diagnosis-card h4 { font-size: 15px; margin-bottom: 5px; }
+          .diagnosis-card p { font-size: 13px; color: #4b5563; margin-bottom: 5px; }
+          .diagnosis-card .recommendation { font-size: 12px; color: #0284c7; font-weight: 600; }
+          .severity-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-left: 8px;
+          }
+          .interpretation-box {
+            background: #f8f5ff;
+            border-left: 4px solid #8b5cf6;
+            padding: 15px;
+            border-radius: 6px;
+          }
+          .interpretation-box p { margin: 0; color: #4b5563; }
+          .recommendations-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            border-radius: 6px;
+          }
+          .recommendations-box ul { margin: 10px 0 0 20px; }
+          .recommendations-box li { margin: 5px 0; color: #4b5563; font-size: 14px; }
+          .signature-area {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            page-break-inside: avoid;
+          }
+          .signature-line {
+            width: 300px;
+            border-top: 2px solid #374151;
+            margin: 0 auto 10px auto;
+            padding-top: 10px;
+            text-align: center;
+          }
+          .signature-name { font-weight: 600; font-size: 15px; color: #111827; }
+          .signature-crm { font-size: 13px; color: #6b7280; }
+          .footer {
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 2px solid #e5e7eb;
+            text-align: center;
+            font-size: 11px;
+            color: #9ca3af;
+          }
+          .footer .warning { 
+            margin-top: 8px;
+            color: #dc2626;
+            font-weight: 600;
+            font-size: 10px;
+          }
+          .tech-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+          }
+          .tech-item {
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+          }
+          .tech-item .label { font-size: 11px; color: #6b7280; }
+          .tech-item .value { font-size: 14px; font-weight: 600; color: #111827; }
+          @media print {
+            .page { padding: 15px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="page">
+          <div class="header">
+            <h1>🏥 ECG Analyzer</h1>
+            <div class="subtitle">Laudo de Análise Eletrocardiográfica</div>
+            <div class="meta">
+              <div>Data: ${dateStr}</div>
+              <div>Hora: ${timeStr}</div>
+              <div>ID: ${data.id || 'N/A'}</div>
+            </div>
+          </div>
+
+          ${institution ? `
+          <div class="institution">
+            <span class="icon">🏥</span>
+            <span class="name">${institution}</span>
+          </div>
+          ` : ''}
+
+          <div class="section">
+            <div class="section-title">📊 Métricas Principais</div>
+            <div class="metrics-grid">
+              <div class="metric-card red">
+                <div class="label">Frequência Cardíaca</div>
+                <div class="value">${data.bpm || '--'}</div>
+                <div class="unit">BPM</div>
+              </div>
+              <div class="metric-card green">
+                <div class="label">Ritmo</div>
+                <div class="value" style="font-size: 16px;">${data.rhythm || '--'}</div>
+              </div>
+              <div class="metric-card purple">
+                <div class="label">Intervalo QT</div>
+                <div class="value">${data.qt || '--'}</div>
+                <div class="unit">ms</div>
+              </div>
+              <div class="metric-card">
+                <div class="label">Intervalo PR</div>
+                <div class="value">${data.pr || '--'}</div>
+                <div class="unit">ms</div>
+              </div>
+            </div>
+          </div>
+
+          ${(data.overallSeverity || data.riskLevel) ? `
+          <div class="section">
+            <div class="section-title">⚠️ Nível de Risco</div>
+            <div class="risk-box" style="border-color: ${severityColors[data.overallSeverity] || severityColors.normal}; background: ${severityColors[data.overallSeverity]}10;">
+              <h3 style="color: ${severityColors[data.overallSeverity] || severityColors.normal};">
+                ${severityLabels[data.overallSeverity] || severityLabels.normal}
+              </h3>
+              <p style="color: ${severityColors[data.overallSeverity] || severityColors.normal};">
+                ${data.overallSeverity === 'critical' ? 'Busque atenção médica imediatamente' :
+                  data.overallSeverity === 'warning' ? 'Recomenda-se avaliação médica' :
+                  data.overallSeverity === 'moderate' ? 'Acompanhamento recomendado' :
+                  'Resultado dentro dos parâmetros normais'}
+              </p>
+            </div>
+          </div>
+          ` : ''}
+
+          ${data.diagnoses && data.diagnoses.length > 0 ? `
+          <div class="section">
+            <div class="section-title">📋 Diagnósticos</div>
+            ${data.diagnoses.map(d => `
+              <div class="diagnosis-card" style="border-color: ${severityColors[d.severity] || '#6b7280'};">
+                <h4>
+                  ${d.name}
+                  <span class="severity-badge" style="background: ${severityColors[d.severity] || '#6b7280'}20; color: ${severityColors[d.severity] || '#6b7280'};">
+                    ${severityLabels[d.severity] || d.severity?.toUpperCase() || 'INFO'}
+                  </span>
+                </h4>
+                ${d.description ? `<p>${d.description}</p>` : ''}
+                ${d.recommendation ? `<div class="recommendation">💡 ${d.recommendation}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+          ` : ''}
+
+          ${data.interpretation ? `
+          <div class="section">
+            <div class="section-title">📝 Interpretação Clínica</div>
+            <div class="interpretation-box">
+              <p>${data.interpretation}</p>
+            </div>
+          </div>
+          ` : ''}
+
+          ${data.recommendations ? `
+          <div class="section">
+            <div class="section-title">💡 Recomendações</div>
+            <div class="recommendations-box">
+              <ul>
+                ${(Array.isArray(data.recommendations) ? data.recommendations : [data.recommendations]).map(r => 
+                  `<li>${typeof r === 'string' ? r : r.text || ''}</li>`
+                ).join('')}
+              </ul>
+            </div>
+          </div>
+          ` : ''}
+
+          ${data.ecgChart ? `
+          <div class="section">
+            <div class="section-title">🔧 Detalhes Técnicos</div>
+            <div class="tech-details">
+              <div class="tech-item">
+                <div class="label">Taxa de Amostragem</div>
+                <div class="value">${data.ecgChart.samplingRate || 250} Hz</div>
+              </div>
+              <div class="tech-item">
+                <div class="label">Duração</div>
+                <div class="value">${data.ecgChart.duration?.toFixed(2) || '10'} s</div>
+              </div>
+              <div class="tech-item">
+                <div class="label">Pontos</div>
+                <div class="value">${data.ecgChart.data?.length || 2500}</div>
+              </div>
+              <div class="tech-item">
+                <div class="label">Fonte</div>
+                <div class="value" style="font-size: 12px;">${data.source || 'N/A'}</div>
+              </div>
+              <div class="tech-item">
+                <div class="label">QRS</div>
+                <div class="value">${data.qrs || '--'} ms</div>
+              </div>
+              <div class="tech-item">
+                <div class="label">Tipo</div>
+                <div class="value" style="font-size: 12px;">${data.isSimulated ? 'Simulado' : 'Real'}</div>
+              </div>
+            </div>
+          </div>
+          ` : ''}
+
+          ${includeSignature ? `
+          <div class="signature-area">
+            <div class="signature-line">
+              <div class="signature-name">${doctorName || '___________________________________'}</div>
+              <div class="signature-crm">${doctorCRM ? `CRM: ${doctorCRM}` : 'Assinatura e Carimbo do Médico'}</div>
+            </div>
+          </div>
+          ` : ''}
+
+          <div class="footer">
+            <div>Laudo gerado automaticamente pelo ECG Analyzer | ${dateStr} às ${timeStr}</div>
+            <div class="warning">
+              ⚠️ Este laudo é para fins educacionais e de referência. Não substitui avaliação médica profissional.
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    const element = document.createElement('div')
+    element.innerHTML = html
+
+    const options = {
+      margin: [10, 10, 10, 10],
+      filename: fileName,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    }
+
+    html2pdf().set(options).from(element).save()
+    return true
+  } catch (error) {
+    console.error('Erro ao gerar PDF profissional:', error)
+    throw error
+  }
+}
+
 /**
  * Copia o link de compartilhamento para a clipboard
  * @param {Object} data - Dados da análise

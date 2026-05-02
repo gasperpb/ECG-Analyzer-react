@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { ChevronDown, ChevronUp, Activity } from 'lucide-react'
 
 export default function ECGFeaturesInput({ onUpdate }) {
@@ -101,39 +101,39 @@ export default function ECGFeaturesInput({ onUpdate }) {
   ]
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-            <Activity className="w-5 h-5 text-purple-600" />
+          <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+            <Activity className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div className="text-left">
-            <h3 className="font-semibold text-gray-900">Características do ECG</h3>
-            <p className="text-xs text-gray-500">Opcional - Selecione o que observa na imagem</p>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Características do ECG</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Opcional - Selecione o que observa na imagem</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {selectedCount > 0 && (
-            <span className="text-sm font-semibold text-purple-600 bg-purple-50 px-3 py-1 rounded">
+            <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/30 px-3 py-1 rounded">
               {selectedCount} selecionado{selectedCount > 1 ? 's' : ''}
             </span>
           )}
           {expanded ? (
-            <ChevronUp className="w-5 h-5 text-gray-400" />
+            <ChevronUp className="w-5 h-5 text-gray-400 dark:text-gray-500" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
+            <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
           )}
         </div>
       </button>
 
       {expanded && (
-        <div className="border-t border-gray-200 p-4 bg-gray-50 space-y-4">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900/50 space-y-4">
           {categories.map((category, idx) => (
             <div key={idx}>
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">{category.title}</h4>
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{category.title}</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {category.features.map(({ key, label, severity }) => (
                   <label
@@ -141,18 +141,18 @@ export default function ECGFeaturesInput({ onUpdate }) {
                     className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                       features[key]
                         ? severity === 'critical'
-                          ? 'bg-red-50 border-red-300 text-red-900'
+                          ? 'bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-800 text-red-900 dark:text-red-300'
                           : severity === 'warning'
-                          ? 'bg-yellow-50 border-yellow-300 text-yellow-900'
-                          : 'bg-blue-50 border-blue-300 text-blue-900'
-                        : 'bg-white border-gray-200 hover:border-gray-300'
+                          ? 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-300 dark:border-yellow-800 text-yellow-900 dark:text-yellow-300'
+                          : 'bg-blue-50 dark:bg-blue-950/20 border-blue-300 dark:border-blue-800 text-blue-900 dark:text-blue-300'
+                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={features[key]}
                       onChange={(e) => handleChange(key, e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-300"
+                      className="w-4 h-4 rounded border-gray-300 dark:border-gray-600"
                     />
                     <span className="text-sm">{label}</span>
                   </label>

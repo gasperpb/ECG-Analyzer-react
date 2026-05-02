@@ -1,31 +1,30 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
 
 export default function VitalSignsInput({ onUpdate }) {
   const [expanded, setExpanded] = useState(false)
   const [vitalSigns, setVitalSigns] = useState({
-    spO2: '',              // Oximetria (SpO2) - 95-100%
-    glucose: '',           // Glicose - 70-100 mg/dL em jejum
-    systolic: '',          // Pressão Sistólica - < 120 mmHg
-    diastolic: '',         // Pressão Diastólica - < 80 mmHg
-    temperature: '',       // Temperatura - 36.5-37.5°C
-    respiratoryRate: '',   // Frequência Respiratória - 12-20 bpm
-    hemoglobin: '',        // Hemoglobina - 13.5-17.5 g/dL (homens)
-    potassium: '',         // Potássio (K+) - 3.5-5.0 mEq/L
-    sodium: '',            // Sódio (Na+) - 135-145 mEq/L
-    magnesium: '',         // Magnésio (Mg++) - 1.7-2.2 mg/dL
-    calcium: '',           // Cálcio (Ca++) - 8.5-10.5 mg/dL
-    tsh: '',               // TSH - 0.4-4.0 mUI/L
-    creatinine: '',        // Creatinina - 0.7-1.3 mg/dL
-    troponin: '',          // Troponina - < 0.04 ng/mL
-    bloodType: '',         // Tipo sanguíneo - A, B, AB, O
-    medicalHistory: '',    // Histórico médico
-    medications: ''        // Medicamentos em uso
+    spO2: '',
+    glucose: '',
+    systolic: '',
+    diastolic: '',
+    temperature: '',
+    respiratoryRate: '',
+    hemoglobin: '',
+    potassium: '',
+    sodium: '',
+    magnesium: '',
+    calcium: '',
+    tsh: '',
+    creatinine: '',
+    troponin: '',
+    bloodType: '',
+    medicalHistory: '',
+    medications: ''
   })
 
   const [errors, setErrors] = useState({})
 
-  // Validar valores
   const validateValue = (field, value) => {
     if (!value) return null
     const num = parseFloat(value)
@@ -57,14 +56,12 @@ export default function VitalSignsInput({ onUpdate }) {
   const handleChange = (field, value) => {
     setVitalSigns(prev => ({ ...prev, [field]: value }))
 
-    // Validar em tempo real
     const error = validateValue(field, value)
     setErrors(prev => ({
       ...prev,
       [field]: error
     }))
 
-    // Notificar parent apenas com valores válidos
     const validSigns = {}
     Object.entries({ ...vitalSigns, [field]: value }).forEach(([key, val]) => {
       if (val && !validateValue(key, val)) {
@@ -105,58 +102,54 @@ export default function VitalSignsInput({ onUpdate }) {
 
   const getStatusColor = (field) => {
     const icon = getStatusIcon(field)
-    if (icon === '✓') return 'text-green-600'
-    if (icon === '⚠') return 'text-yellow-600'
-    if (icon === '✗') return 'text-red-600'
-    return 'text-gray-400'
+    if (icon === '✓') return 'text-green-600 dark:text-green-400'
+    if (icon === '⚠') return 'text-yellow-600 dark:text-yellow-400'
+    if (icon === '✗') return 'text-red-600 dark:text-red-400'
+    return 'text-gray-400 dark:text-gray-500'
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-      {/* Header */}
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-medical-100 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-medical-100 dark:bg-medical-900/30 rounded-lg flex items-center justify-center">
             <span className="text-lg">💊</span>
           </div>
           <div className="text-left">
-            <h3 className="font-semibold text-gray-900">Sinais Vitais Adicionais</h3>
-            <p className="text-xs text-gray-500">Opcional - Adiciona precisão ao diagnóstico</p>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Sinais Vitais Adicionais</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Opcional - Adiciona precisão ao diagnóstico</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {Object.entries(vitalSigns).some(([k, v]) => v && k !== 'bloodType' && k !== 'medicalHistory' && k !== 'medications') && (
-            <span className="text-sm font-semibold text-medical-600 bg-medical-50 px-3 py-1 rounded">
+            <span className="text-sm font-semibold text-medical-600 dark:text-medical-400 bg-medical-50 dark:bg-medical-950/30 px-3 py-1 rounded">
               {Object.entries(vitalSigns).filter(([k, v]) => v && k !== 'bloodType' && k !== 'medicalHistory' && k !== 'medications').length} adicionados
             </span>
           )}
           {expanded ? (
-            <ChevronUp className="w-5 h-5 text-gray-400" />
+            <ChevronUp className="w-5 h-5 text-gray-400 dark:text-gray-500" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
+            <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
           )}
         </div>
       </button>
 
-      {/* Content */}
       {expanded && (
-        <div className="border-t border-gray-200 p-4 bg-gray-50">
-          {/* Info Box */}
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex gap-2">
-            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-900">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900/50">
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg flex gap-2">
+            <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-900 dark:text-blue-300">
               <p className="font-semibold">💡 Dica</p>
               <p>Adicione sinais vitais para diagnósticos mais precisos. Todos os campos são opcionais.</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Oximetria (SpO2) */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Oximetria (SpO2) {getStatusIcon('spO2') && <span className={getStatusColor('spO2')}>{getStatusIcon('spO2')}</span>}
               </label>
               <div className="flex gap-2">
@@ -168,19 +161,18 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="95"
                   value={vitalSigns.spO2}
                   onChange={(e) => handleChange('spO2', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.spO2 ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.spO2 ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">%</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">%</span>
               </div>
-              {errors.spO2 && <p className="text-xs text-red-600 mt-1">{errors.spO2}</p>}
-              <p className="text-xs text-gray-500 mt-1">Normal: 95-100%</p>
+              {errors.spO2 && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.spO2}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal: 95-100%</p>
             </div>
 
-            {/* Glicose */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Glicose {getStatusIcon('glucose') && <span className={getStatusColor('glucose')}>{getStatusIcon('glucose')}</span>}
               </label>
               <div className="flex gap-2">
@@ -192,19 +184,18 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="85"
                   value={vitalSigns.glucose}
                   onChange={(e) => handleChange('glucose', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.glucose ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.glucose ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">mg/dL</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">mg/dL</span>
               </div>
-              {errors.glucose && <p className="text-xs text-red-600 mt-1">{errors.glucose}</p>}
-              <p className="text-xs text-gray-500 mt-1">Jejum: 70-100 mg/dL</p>
+              {errors.glucose && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.glucose}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Jejum: 70-100 mg/dL</p>
             </div>
 
-            {/* Pressão Sistólica */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Pressão Sistólica {getStatusIcon('systolic') && <span className={getStatusColor('systolic')}>{getStatusIcon('systolic')}</span>}
               </label>
               <div className="flex gap-2">
@@ -216,19 +207,18 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="120"
                   value={vitalSigns.systolic}
                   onChange={(e) => handleChange('systolic', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.systolic ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.systolic ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">mmHg</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">mmHg</span>
               </div>
-              {errors.systolic && <p className="text-xs text-red-600 mt-1">{errors.systolic}</p>}
-              <p className="text-xs text-gray-500 mt-1">Normal: &lt; 120 mmHg</p>
+              {errors.systolic && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.systolic}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal: &lt; 120 mmHg</p>
             </div>
 
-            {/* Pressão Diastólica */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Pressão Diastólica {getStatusIcon('diastolic') && <span className={getStatusColor('diastolic')}>{getStatusIcon('diastolic')}</span>}
               </label>
               <div className="flex gap-2">
@@ -240,19 +230,18 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="80"
                   value={vitalSigns.diastolic}
                   onChange={(e) => handleChange('diastolic', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.diastolic ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.diastolic ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">mmHg</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">mmHg</span>
               </div>
-              {errors.diastolic && <p className="text-xs text-red-600 mt-1">{errors.diastolic}</p>}
-              <p className="text-xs text-gray-500 mt-1">Normal: &lt; 80 mmHg</p>
+              {errors.diastolic && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.diastolic}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal: &lt; 80 mmHg</p>
             </div>
 
-            {/* Temperatura */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Temperatura {getStatusIcon('temperature') && <span className={getStatusColor('temperature')}>{getStatusIcon('temperature')}</span>}
               </label>
               <div className="flex gap-2">
@@ -264,19 +253,18 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="37"
                   value={vitalSigns.temperature}
                   onChange={(e) => handleChange('temperature', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.temperature ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.temperature ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">°C</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">°C</span>
               </div>
-              {errors.temperature && <p className="text-xs text-red-600 mt-1">{errors.temperature}</p>}
-              <p className="text-xs text-gray-500 mt-1">Normal: 36.5-37.5°C</p>
+              {errors.temperature && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.temperature}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal: 36.5-37.5°C</p>
             </div>
 
-            {/* Frequência Respiratória */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Frequência Respiratória {getStatusIcon('respiratoryRate') && <span className={getStatusColor('respiratoryRate')}>{getStatusIcon('respiratoryRate')}</span>}
               </label>
               <div className="flex gap-2">
@@ -288,19 +276,18 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="16"
                   value={vitalSigns.respiratoryRate}
                   onChange={(e) => handleChange('respiratoryRate', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.respiratoryRate ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.respiratoryRate ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">bpm</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">bpm</span>
               </div>
-              {errors.respiratoryRate && <p className="text-xs text-red-600 mt-1">{errors.respiratoryRate}</p>}
-              <p className="text-xs text-gray-500 mt-1">Normal: 12-20 bpm</p>
+              {errors.respiratoryRate && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.respiratoryRate}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal: 12-20 bpm</p>
             </div>
 
-            {/* Hemoglobina */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Hemoglobina {getStatusIcon('hemoglobin') && <span className={getStatusColor('hemoglobin')}>{getStatusIcon('hemoglobin')}</span>}
               </label>
               <div className="flex gap-2">
@@ -312,19 +299,18 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="15"
                   value={vitalSigns.hemoglobin}
                   onChange={(e) => handleChange('hemoglobin', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.hemoglobin ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.hemoglobin ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">g/dL</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">g/dL</span>
               </div>
-              {errors.hemoglobin && <p className="text-xs text-red-600 mt-1">{errors.hemoglobin}</p>}
-              <p className="text-xs text-gray-500 mt-1">Homens: 13.5-17.5 g/dL</p>
+              {errors.hemoglobin && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.hemoglobin}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Homens: 13.5-17.5 g/dL</p>
             </div>
 
-            {/* Potássio (K+) */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Potássio (K+) {getStatusIcon('potassium') && <span className={getStatusColor('potassium')}>{getStatusIcon('potassium')}</span>}
               </label>
               <div className="flex gap-2">
@@ -336,19 +322,18 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="4.5"
                   value={vitalSigns.potassium}
                   onChange={(e) => handleChange('potassium', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.potassium ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.potassium ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">mEq/L</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">mEq/L</span>
               </div>
-              {errors.potassium && <p className="text-xs text-red-600 mt-1">{errors.potassium}</p>}
-              <p className="text-xs text-gray-500 mt-1">Normal: 3.5-5.0 mEq/L</p>
+              {errors.potassium && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.potassium}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal: 3.5-5.0 mEq/L</p>
             </div>
 
-            {/* Sódio (Na+) */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Sódio (Na+) {getStatusIcon('sodium') && <span className={getStatusColor('sodium')}>{getStatusIcon('sodium')}</span>}
               </label>
               <div className="flex gap-2">
@@ -360,19 +345,18 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="140"
                   value={vitalSigns.sodium}
                   onChange={(e) => handleChange('sodium', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.sodium ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.sodium ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">mEq/L</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">mEq/L</span>
               </div>
-              {errors.sodium && <p className="text-xs text-red-600 mt-1">{errors.sodium}</p>}
-              <p className="text-xs text-gray-500 mt-1">Normal: 135-145 mEq/L</p>
+              {errors.sodium && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.sodium}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal: 135-145 mEq/L</p>
             </div>
 
-            {/* Magnésio (Mg++) */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Magnésio (Mg++) {getStatusIcon('magnesium') && <span className={getStatusColor('magnesium')}>{getStatusIcon('magnesium')}</span>}
               </label>
               <div className="flex gap-2">
@@ -384,19 +368,18 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="2.0"
                   value={vitalSigns.magnesium}
                   onChange={(e) => handleChange('magnesium', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.magnesium ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.magnesium ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">mg/dL</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">mg/dL</span>
               </div>
-              {errors.magnesium && <p className="text-xs text-red-600 mt-1">{errors.magnesium}</p>}
-              <p className="text-xs text-gray-500 mt-1">Normal: 1.7-2.2 mg/dL</p>
+              {errors.magnesium && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.magnesium}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal: 1.7-2.2 mg/dL</p>
             </div>
 
-            {/* Cálcio (Ca++) */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Cálcio (Ca++) {getStatusIcon('calcium') && <span className={getStatusColor('calcium')}>{getStatusIcon('calcium')}</span>}
               </label>
               <div className="flex gap-2">
@@ -408,19 +391,18 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="9.5"
                   value={vitalSigns.calcium}
                   onChange={(e) => handleChange('calcium', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.calcium ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.calcium ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">mg/dL</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">mg/dL</span>
               </div>
-              {errors.calcium && <p className="text-xs text-red-600 mt-1">{errors.calcium}</p>}
-              <p className="text-xs text-gray-500 mt-1">Normal: 8.5-10.5 mg/dL</p>
+              {errors.calcium && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.calcium}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal: 8.5-10.5 mg/dL</p>
             </div>
 
-            {/* TSH */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 TSH {getStatusIcon('tsh') && <span className={getStatusColor('tsh')}>{getStatusIcon('tsh')}</span>}
               </label>
               <div className="flex gap-2">
@@ -432,19 +414,18 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="2.5"
                   value={vitalSigns.tsh}
                   onChange={(e) => handleChange('tsh', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.tsh ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.tsh ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">mUI/L</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">mUI/L</span>
               </div>
-              {errors.tsh && <p className="text-xs text-red-600 mt-1">{errors.tsh}</p>}
-              <p className="text-xs text-gray-500 mt-1">Normal: 0.4-4.0 mUI/L</p>
+              {errors.tsh && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.tsh}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal: 0.4-4.0 mUI/L</p>
             </div>
 
-            {/* Creatinina */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Creatinina {getStatusIcon('creatinine') && <span className={getStatusColor('creatinine')}>{getStatusIcon('creatinine')}</span>}
               </label>
               <div className="flex gap-2">
@@ -456,19 +437,18 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="1.0"
                   value={vitalSigns.creatinine}
                   onChange={(e) => handleChange('creatinine', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.creatinine ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.creatinine ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">mg/dL</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">mg/dL</span>
               </div>
-              {errors.creatinine && <p className="text-xs text-red-600 mt-1">{errors.creatinine}</p>}
-              <p className="text-xs text-gray-500 mt-1">Normal: 0.7-1.3 mg/dL</p>
+              {errors.creatinine && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.creatinine}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal: 0.7-1.3 mg/dL</p>
             </div>
 
-            {/* Troponina */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Troponina {getStatusIcon('troponin') && <span className={getStatusColor('troponin')}>{getStatusIcon('troponin')}</span>}
               </label>
               <div className="flex gap-2">
@@ -480,25 +460,24 @@ export default function VitalSignsInput({ onUpdate }) {
                   placeholder="0.02"
                   value={vitalSigns.troponin}
                   onChange={(e) => handleChange('troponin', e.target.value)}
-                  className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
-                    errors.troponin ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  className={`flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 ${
+                    errors.troponin ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-300 dark:border-gray-600'
                   }`}
                 />
-                <span className="text-sm text-gray-500 py-2">ng/mL</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 py-2">ng/mL</span>
               </div>
-              {errors.troponin && <p className="text-xs text-red-600 mt-1">{errors.troponin}</p>}
-              <p className="text-xs text-gray-500 mt-1">Normal: &lt; 0.04 ng/mL</p>
+              {errors.troponin && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.troponin}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal: &lt; 0.04 ng/mL</p>
             </div>
 
-            {/* Tipo Sanguíneo */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Tipo Sanguíneo
               </label>
               <select
                 value={vitalSigns.bloodType}
                 onChange={(e) => handleChange('bloodType', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               >
                 <option value="">Selecione...</option>
                 <option value="O-">O-</option>
@@ -512,9 +491,8 @@ export default function VitalSignsInput({ onUpdate }) {
               </select>
             </div>
 
-            {/* Medicamentos */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Medicamentos em Uso
               </label>
               <textarea
@@ -522,14 +500,13 @@ export default function VitalSignsInput({ onUpdate }) {
                 value={vitalSigns.medications}
                 onChange={(e) => handleChange('medications', e.target.value)}
                 rows="2"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none"
               />
-              <p className="text-xs text-gray-500 mt-1">Separados por vírgula</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Separados por vírgula</p>
             </div>
 
-            {/* Histórico Médico */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Histórico Médico
               </label>
               <textarea
@@ -537,9 +514,9 @@ export default function VitalSignsInput({ onUpdate }) {
                 value={vitalSigns.medicalHistory}
                 onChange={(e) => handleChange('medicalHistory', e.target.value)}
                 rows="2"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none"
               />
-              <p className="text-xs text-gray-500 mt-1">Separados por vírgula</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Separados por vírgula</p>
             </div>
           </div>
         </div>

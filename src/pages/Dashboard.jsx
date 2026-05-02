@@ -1,4 +1,3 @@
-import React from 'react'
 import { Activity, Zap, BarChart3, Heart, TrendingUp, Image, FlaskConical, Microscope, ShieldAlert } from 'lucide-react'
 import StatsCard from '../components/StatsCard'
 
@@ -96,7 +95,7 @@ export default function Dashboard({ onNavigate }) {
   return (
     <div className="space-y-8">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-medical-600 to-red-600 text-white rounded-xl p-12 shadow-lg">
+      <div className="bg-gradient-to-r from-medical-600 to-red-600 text-white rounded-xl p-12 shadow-lg dark:shadow-gray-900">
         <h2 className="text-4xl font-bold mb-4">Bem-vindo ao ECG Analyzer</h2>
         <p className="text-lg mb-2 opacity-90">
           Sistema avançado de análise de eletrocardiogramas com motor de diagnóstico integrado
@@ -107,8 +106,8 @@ export default function Dashboard({ onNavigate }) {
         <div className="flex flex-wrap gap-4">
           <button
             onClick={() => onNavigate('analyzer')}
-            className="bg-white text-medical-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-all shadow-md hover:shadow-lg"
-          >
+            data-onboard="analyzer"
+            className="bg-white dark:bg-gray-800 text-medical-600 dark:text-medical-400 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition-all shadow-md dark:shadow-gray-900/50 hover:shadow-lg"          >
             🚀 Iniciar Análise
           </button>
           <button
@@ -122,7 +121,7 @@ export default function Dashboard({ onNavigate }) {
 
       {/* Stats Overview */}
       <div>
-        <h3 className="text-2xl font-bold mb-6 text-gray-900">Visão Geral</h3>
+        <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">Visão Geral</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatsCard
             icon={Heart}
@@ -153,22 +152,22 @@ export default function Dashboard({ onNavigate }) {
 
       {/* Features */}
       <div>
-        <h3 className="text-2xl font-bold mb-6 text-gray-900">Funcionalidades Principais</h3>
+        <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">Funcionalidades Principais</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {features.map((feature, index) => {
             const Icon = feature.icon
             return (
               <div
                 key={index}
-                className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all border border-gray-200"
+                className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md dark:shadow-gray-900/50 hover:shadow-lg transition-all border border-gray-200 dark:border-gray-700"
               >
                 <div className="flex items-start gap-4">
-                  <div className="p-3 bg-medical-50 rounded-lg flex-shrink-0">
+                     <div className="p-3 bg-medical-50 dark:bg-medical-900/20 rounded-lg flex-shrink-0">
                     <Icon className="w-6 h-6 text-medical-600" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h4>
-                    <p className="text-gray-600 text-sm">{feature.description}</p>
+                     <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">{feature.title}</h4>
+                     <p className="text-gray-600 dark:text-gray-400 text-sm">{feature.description}</p>
                   </div>
                 </div>
               </div>
@@ -179,17 +178,17 @@ export default function Dashboard({ onNavigate }) {
 
       {/* Diagnostic Categories */}
       <div>
-        <h3 className="text-2xl font-bold mb-6 text-gray-900">Categorias de Diagnóstico</h3>
+        <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">Categorias de Diagnóstico</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {diagnosticCategories.map((category, index) => {
-            const colors = {
-              red: 'bg-red-50 border-red-200 text-red-900',
-              blue: 'bg-blue-50 border-blue-200 text-blue-900',
-              green: 'bg-green-50 border-green-200 text-green-900',
-              purple: 'bg-purple-50 border-purple-200 text-purple-900',
-              yellow: 'bg-yellow-50 border-yellow-200 text-yellow-900',
-              orange: 'bg-orange-50 border-orange-200 text-orange-900'
-            }
+             const colors = {
+               red: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-900 dark:text-red-100',
+               blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100',
+               green: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-900 dark:text-green-100',
+               purple: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-900 dark:text-purple-100',
+               yellow: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-900 dark:text-yellow-100',
+               orange: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-900 dark:text-orange-100'
+             }
             const colorClass = colors[category.color]
 
             return (
@@ -203,31 +202,31 @@ export default function Dashboard({ onNavigate }) {
       </div>
 
       {/* Vital Signs Grid */}
-      <div className="bg-gradient-to-r from-medical-50 to-blue-50 border-2 border-medical-300 rounded-lg p-8">
+      <div data-onboard="vitals" className="bg-gradient-to-r from-medical-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 border-2 border-medical-300 dark:border-gray-700 rounded-lg p-8">
         <div className="flex items-center gap-3 mb-6">
           <TrendingUp className="w-8 h-8 text-medical-600" />
-          <h3 className="text-2xl font-bold text-gray-900">🧪 14 Sinais Vitais e Laboratoriais</h3>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">🧪 14 Sinais Vitais e Laboratoriais</h3>
         </div>
 
-        <p className="text-gray-700 mb-6 text-lg font-semibold">
+         <p className="text-gray-700 dark:text-gray-300 mb-6 text-lg font-semibold">
           Adicione parâmetros clínicos para detetar 30+ condições e síndromes combinadas:
         </p>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
           {vitalSignsNew.map((vital, index) => (
-            <div key={index} className="bg-white p-3 rounded-lg border border-gray-200 hover:shadow-md transition-all">
+             <div key={index} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg">{vital.icon}</span>
-                <span className="font-bold text-sm text-gray-900">{vital.name}</span>
+                <span className="font-bold text-sm text-gray-900 dark:text-gray-100">{vital.name}</span>
               </div>
-              <p className="text-xs text-gray-500 mb-1">{vital.range}</p>
+               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{vital.range}</p>
               <p className="text-xs text-medical-600 font-medium">{vital.conditions}</p>
             </div>
           ))}
         </div>
 
         {/* Syndrome Groups */}
-        <h4 className="text-lg font-bold text-gray-900 mb-4">🔗 30+ Síndromes Combinadas Detectáveis</h4>
+         <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">🔗 30+ Síndromes Combinadas Detectáveis</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {syndromeGroups.map((group, idx) => {
             const borderColors = {
@@ -239,12 +238,12 @@ export default function Dashboard({ onNavigate }) {
               orange: 'border-orange-500'
             }
             return (
-              <div key={idx} className={`bg-white p-4 rounded-lg border-l-4 ${borderColors[group.color]}`}>
-                <p className="font-bold text-gray-900 mb-2">{group.title}</p>
-                <ul className="text-sm text-gray-600 space-y-1">
+               <div key={idx} className={`bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 ${borderColors[group.color]}`}>
+                 <p className="font-bold text-gray-900 dark:text-gray-100 mb-2">{group.title}</p>
+                 <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                   {group.items.map((item, i) => (
                     <li key={i} className="flex items-start gap-1">
-                      <span className="text-medical-500 mt-0.5">•</span>
+                       <span className="text-medical-500 dark:text-medical-400 mt-0.5">•</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -256,20 +255,20 @@ export default function Dashboard({ onNavigate }) {
       </div>
 
       {/* ECG Features Section */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg p-8">
+      <div data-onboard="features" className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-800 border-2 border-purple-300 dark:border-gray-700 rounded-lg p-8">
         <div className="flex items-center gap-3 mb-6">
           <Microscope className="w-8 h-8 text-purple-600" />
-          <h3 className="text-2xl font-bold text-gray-900">🔬 20+ Padrões ECG Visuais</h3>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">🔬 20+ Padrões ECG Visuais</h3>
         </div>
 
-        <p className="text-gray-700 mb-4 text-lg font-semibold">
+         <p className="text-gray-700 dark:text-gray-300 mb-4 text-lg font-semibold">
           Selecione o que observa na imagem do ECG para detetar condições específicas:
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
+           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
             <p className="font-bold text-red-700 mb-2">⚡ Eletrólitos</p>
-            <ul className="text-sm text-gray-600 space-y-1">
+             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
               <li>• Ondas T altas e picudas (K+ ↑)</li>
               <li>• Ondas U proeminentes (K+ ↓)</li>
               <li>• Ondas de Osborn (hipotermia)</li>
@@ -277,9 +276,9 @@ export default function Dashboard({ onNavigate }) {
             </ul>
           </div>
 
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
+           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
             <p className="font-bold text-red-700 mb-2">🔴 Isquemia / IAM</p>
-            <ul className="text-sm text-gray-600 space-y-1">
+             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
               <li>• Supradesnivelamento ST (IAM)</li>
               <li>• Infradesnivelamento ST (isquemia)</li>
               <li>• Inversão onda T (isquemia)</li>
@@ -287,9 +286,9 @@ export default function Dashboard({ onNavigate }) {
             </ul>
           </div>
 
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
+           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
             <p className="font-bold text-purple-700 mb-2">💓 Ritmo / Condução</p>
-            <ul className="text-sm text-gray-600 space-y-1">
+             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
               <li>• Fibrilação auricular</li>
               <li>• Flutter auricular</li>
               <li>• BAV 1º/2º/3º grau</li>
@@ -297,9 +296,9 @@ export default function Dashboard({ onNavigate }) {
             </ul>
           </div>
 
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
+           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
             <p className="font-bold text-yellow-700 mb-2">⚠️ Síndromes</p>
-            <ul className="text-sm text-gray-600 space-y-1">
+             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
               <li>• Onda delta (WPW)</li>
               <li>• QT longo (Torsades)</li>
               <li>• QT curto</li>
@@ -307,9 +306,9 @@ export default function Dashboard({ onNavigate }) {
             </ul>
           </div>
 
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
+           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
             <p className="font-bold text-green-700 mb-2">🫀 Sobrecargas</p>
-            <ul className="text-sm text-gray-600 space-y-1">
+             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
               <li>• Sobrecarga VE (HVE)</li>
               <li>• Sobrecarga VD (HVD)</li>
               <li>• Baixa voltagem</li>
@@ -317,9 +316,9 @@ export default function Dashboard({ onNavigate }) {
             </ul>
           </div>
 
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
+           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
             <p className="font-bold text-blue-700 mb-2">📋 Outros</p>
-            <ul className="text-sm text-gray-600 space-y-1">
+             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
               <li>• Ondas P ausentes</li>
               <li>• PR prolongado</li>
               <li>• Bradicardia</li>
@@ -331,7 +330,7 @@ export default function Dashboard({ onNavigate }) {
 
       {/* Quick Actions */}
       <div>
-        <h3 className="text-2xl font-bold mb-6 text-gray-900">Ações Rápidas</h3>
+        <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">Ações Rápidas</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
             onClick={() => onNavigate('analyzer')}
@@ -355,16 +354,16 @@ export default function Dashboard({ onNavigate }) {
       </div>
 
       {/* Info Section */}
-      <div className="bg-blue-50 border border-blue-300 rounded-lg p-6">
-        <h4 className="text-lg font-bold text-blue-900 mb-3">ℹ️ Informações do Sistema</h4>
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-800 rounded-lg p-6">
+        <h4 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-3">ℹ️ Informações do Sistema</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ul className="text-blue-800 text-sm space-y-2">
+           <ul className="text-blue-800 dark:text-blue-200 text-sm space-y-2">
             <li>• <span className="font-semibold">Formatos de dados:</span> CSV, JSON</li>
             <li>• <span className="font-semibold">Formatos de imagem:</span> PNG, JPG, JPEG, BMP</li>
             <li>• <span className="font-semibold">Tamanho máximo:</span> 10MB</li>
             <li>• <span className="font-semibold">Taxa de amostragem:</span> 250-500 Hz</li>
           </ul>
-          <ul className="text-blue-800 text-sm space-y-2">
+           <ul className="text-blue-800 dark:text-blue-200 text-sm space-y-2">
             <li>• <span className="font-semibold">Diagnósticos:</span> 100+ (ECG + Vitais + Síndromes)</li>
             <li>• <span className="font-semibold">Sinais Vitais:</span> 14 parâmetros opcionais</li>
             <li>• <span className="font-semibold">Padrões ECG:</span> 20+ selecionáveis</li>
@@ -374,20 +373,20 @@ export default function Dashboard({ onNavigate }) {
       </div>
 
       {/* Footer */}
-      <div className="border-t-2 border-gray-200 pt-8 mt-8">
-        <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-6 text-center">
-          <p className="text-gray-600 text-sm mb-2">
+      <div className="border-t-2 border-gray-200 dark:border-gray-700 pt-8 mt-8">
+          <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 rounded-lg p-6 text-center">
+            <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
             🏥 <span className="font-semibold">ECG Analyzer</span> - Sistema Inteligente de Análise Cardíaca
           </p>
-          <p className="text-gray-500 text-xs">
+            <p className="text-gray-500 dark:text-gray-400 text-xs">
             Desenvolvido por 
             <span className="font-bold text-medical-600 ml-1">Achillesdev</span>
             {' '}|{' '}
-            <span className="text-blue-600 hover:text-blue-700 cursor-pointer">GitHub</span>
+            <span className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer">GitHub</span>
             {' '}|{' '}
-            <span className="text-blue-600 hover:text-blue-700 cursor-pointer">Portfolio</span>
+            <span className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer">Portfolio</span>
           </p>
-          <p className="text-gray-400 text-xs mt-3 italic">
+            <p className="text-gray-400 dark:text-gray-500 text-xs mt-3 italic">
             ⚠️ Para fins educacionais e de referência. Não substitui avaliação médica profissional.
           </p>
         </div>

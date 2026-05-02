@@ -17,6 +17,38 @@ Uma interface web moderna e responsiva para análise de eletrocardiogramas (ECG)
 - ✅ **100+ Diagnósticos** - Detecção de doenças cardíacas, eletrólitos, endócrinas, respiratórias, renais e 30+ síndromes combinadas
 - ✅ **Correlações Multissistêmicas** - Análise cruzada ECG + sinais vitais + características visuais (30+ síndromes)
 - ✅ **Relatórios Completos** - Diagnósticos, risco, interpretação e recomendações
+- ✅ **Histórico de Análises** - Armazenamento local com exportação para CSV
+
+---
+
+## 🚀 Roadmap de Funcionalidades
+
+### ✅ Implementado
+- [x] **Dark Mode** - Toggle com persistência localStorage e detecção automática do sistema
+- [x] **PDF Profissional** - Laudo formatado com header gradiente, métricas visuais, badges de severidade, assinatura médica (nome + CRM) e instituição
+- [x] **Tutorial Onboarding** - Tooltips first-run com 7 passos e barra de progresso
+- [x] **Responsividade Mobile** - Dark mode em todos componentes, inputs otimizados, modais responsivos
+- [x] **ML/AI Classificação** - Hook `useArrhythmiaClassifier` com detecção de bradicardia, taquicardia, ritmo irregular, ST elevation/depression, T wave inversion, QRS alargado
+- [x] **Integração HL7/FHIR** - Exportação FHIR R4 (JSON) e HL7 v2 com segmentos MSH, PID, OBR, OBX
+- [x] **Histórico de Análises** - localStorage com lista ordenada, visualização, delete e exportação CSV
+- [x] **Comparação de Análises** - Reabrir análises anteriores a partir do histórico
+
+### 📋 Planejado
+- [ ] **Autenticação** - Login com Supabase Auth ou Clerk
+- [ ] **Histórico na Nuvem** - Sync com Vercel Postgres/Supabase
+- [ ] **Compartilhar via Link** - Gerar URL única para cada análise
+- [ ] **Dashboard com Gráficos** - Evolução de BPM/QT ao longo do tempo
+- [ ] **Comparar Análises Lado a Lado** - Visualizar 2+ resultados simultaneamente
+- [ ] **Notificações** - Alertar quando detectar risco alto
+- [ ] **React Router** - Rotas reais com deep links e SEO
+- [ ] **Paginação no Histórico** - Virtualize listas longas
+- [ ] **Multi-lead ECG** - Suporte a 12 derivações
+- [ ] **Laudo com Gráfico ECG** - Incluir imagem do gráfico no PDF
+- [ ] **Assinatura Digital** - Upload de assinatura médica para o PDF
+- [ ] **Integração com PACS** - Envio de laudos para sistemas de imagem hospitalar
+- [ ] **Unit Tests** - Testar motor de diagnóstico e hooks
+- [ ] **PWA** - Service worker para funcionar offline
+- [ ] **Acessibilidade** - ARIA labels, navegação por teclado, screen readers
 
 ---
 
@@ -67,10 +99,14 @@ ecg/
 │   ├── pages/
 │   │   ├── Dashboard.jsx
 │   │   ├── Analyzer.jsx
-│   │   └── Results.jsx
+│   │   ├── Results.jsx
+│   │   └── History.jsx          # Histórico de análises
 │   └── services/
 │       ├── api.js               # API + extração de imagem
 │       └── diagnosticEngine.js  # Motor de diagnóstico frontend
+│   └── hooks/
+│       ├── useApi.js            # Hook para API
+│       └── useHistory.js        # Hook para histórico (localStorage)
 │
 ├── backend/                     # Backend Node.js/Express
 │   ├── controllers/
@@ -298,6 +334,32 @@ GET  /                     # Info da API
 | **PNG** | Recomendado, melhor qualidade |
 | **JPG/JPEG** | Comprimido, compatível |
 | **BMP** | Sem compressão |
+
+---
+
+## 📅 Histórico de Análises
+
+O sistema armazena automaticamente todas as análises realizadas no `localStorage` do navegador.
+
+### Funcionalidades
+- **Armazenamento automático** - Cada análise é salva com data, métricas e resultados completos
+- **Lista ordenada** - Visualize todas as análises da mais recente para a mais antiga
+- **Detalhes completos** - Clique em qualquer análise para ver os resultados completos
+- **Exportação CSV** - Baixe o histórico completo em formato CSV para análise externa
+- **Gerenciamento** - Delete análises individuais ou limpe todo o histórico
+- **Limite inteligente** - Mantém as 50 análises mais recentes automaticamente
+
+### Dados Armazenados por Análise
+| Campo | Descrição |
+|------|----------|
+| Data | Data e hora da análise |
+| Fonte | Origem dos dados (arquivo, imagem, simulado) |
+| BPM | Frequência cardíaca |
+| Ritmo | Tipo de ritmo identificado |
+| Intervalos | PR, QRS, QT |
+| Nível de Risco | Classificação de severidade |
+| Diagnósticos | Lista completa de diagnósticos |
+| Interpretação | Resumo clínico |
 
 ---
 

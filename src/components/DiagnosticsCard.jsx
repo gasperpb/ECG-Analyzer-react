@@ -1,36 +1,35 @@
-import React from 'react'
 import { AlertTriangle, CheckCircle, AlertCircle, Info } from 'lucide-react'
 
 export default function DiagnosticsCard({ diagnosis, severity = 'info' }) {
   const getSeverityConfig = (sev) => {
     const configs = {
       critical: {
-        bgColor: 'bg-red-50',
-        borderColor: 'border-red-300',
-        textColor: 'text-red-900',
+        bgColor: 'bg-red-50 dark:bg-red-950/30',
+        borderColor: 'border-red-300 dark:border-red-800',
+        textColor: 'text-red-900 dark:text-red-300',
         icon: AlertTriangle,
-        badge: 'bg-red-200 text-red-800'
+        badge: 'bg-red-200 dark:bg-red-900 text-red-800 dark:text-red-300'
       },
       warning: {
-        bgColor: 'bg-yellow-50',
-        borderColor: 'border-yellow-300',
-        textColor: 'text-yellow-900',
+        bgColor: 'bg-yellow-50 dark:bg-yellow-950/30',
+        borderColor: 'border-yellow-300 dark:border-yellow-800',
+        textColor: 'text-yellow-900 dark:text-yellow-300',
         icon: AlertCircle,
-        badge: 'bg-yellow-200 text-yellow-800'
+        badge: 'bg-yellow-200 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300'
       },
       normal: {
-        bgColor: 'bg-green-50',
-        borderColor: 'border-green-300',
-        textColor: 'text-green-900',
+        bgColor: 'bg-green-50 dark:bg-green-950/30',
+        borderColor: 'border-green-300 dark:border-green-800',
+        textColor: 'text-green-900 dark:text-green-300',
         icon: CheckCircle,
-        badge: 'bg-green-200 text-green-800'
+        badge: 'bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-300'
       },
       info: {
-        bgColor: 'bg-blue-50',
-        borderColor: 'border-blue-300',
-        textColor: 'text-blue-900',
+        bgColor: 'bg-blue-50 dark:bg-blue-950/30',
+        borderColor: 'border-blue-300 dark:border-blue-800',
+        textColor: 'text-blue-900 dark:text-blue-300',
         icon: Info,
-        badge: 'bg-blue-200 text-blue-800'
+        badge: 'bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-300'
       }
     }
     return configs[sev] || configs.info

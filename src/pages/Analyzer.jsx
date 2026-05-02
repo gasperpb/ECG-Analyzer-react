@@ -197,8 +197,8 @@ export default function Analyzer({ onAnalysisComplete }) {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Analisador de ECG</h2>
-        <p className="text-gray-600">
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Analisador de ECG</h2>
+        <p className="text-gray-600 dark:text-gray-400">
           Faça upload de um arquivo de ECG ou use dados simulados para análise
         </p>
       </div>
@@ -206,17 +206,17 @@ export default function Analyzer({ onAnalysisComplete }) {
       {/* Input Methods */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* File Upload */}
-        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">📄 Arquivo de Dados</h3>
-          <p className="text-gray-600 text-sm mb-4">CSV, JSON ou ECG</p>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">📄 Arquivo de Dados</h3>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">CSV, JSON ou ECG</p>
           <FileUpload
             onFileSelect={handleFileSelect}
             loading={loading}
             supportedFormats={['.csv', '.json', '.ecg']}
           />
           {selectedFile && analysisMethod === 'file' && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-300 rounded-lg">
-              <p className="text-green-700 text-sm font-medium">
+            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-800 rounded-lg">
+              <p className="text-green-700 dark:text-green-100 text-sm font-medium">
                 ✓ Arquivo carregado com sucesso!
               </p>
             </div>
@@ -224,17 +224,17 @@ export default function Analyzer({ onAnalysisComplete }) {
         </div>
 
         {/* Image Upload */}
-        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">🖼️ Imagem de ECG</h3>
-          <p className="text-gray-600 text-sm mb-4">PNG, JPG ou BMP</p>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">🖼️ Imagem de ECG</h3>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">PNG, JPG ou BMP</p>
           <FileUpload
             onFileSelect={handleFileSelect}
             loading={loading}
             supportedFormats={['.png', '.jpg', '.jpeg', '.bmp']}
           />
           {selectedFile && analysisMethod === 'image' && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-300 rounded-lg">
-              <p className="text-green-700 text-sm font-medium">
+            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-800 rounded-lg">
+              <p className="text-green-700 dark:text-green-100 text-sm font-medium">
                 ✓ Imagem carregada com sucesso!
               </p>
             </div>
@@ -242,9 +242,9 @@ export default function Analyzer({ onAnalysisComplete }) {
         </div>
 
         {/* Simulated Data */}
-        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">🎲 Dados Simulados</h3>
-          <p className="text-gray-600 text-sm mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">🎲 Dados Simulados</h3>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">
             Gere um exemplo de ECG com padrões realistas
           </p>
           <button
@@ -256,8 +256,8 @@ export default function Analyzer({ onAnalysisComplete }) {
             Gerar Dados Simulados
           </button>
           {analysisMethod === 'simulated' && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-300 rounded-lg">
-              <p className="text-green-700 text-sm font-medium">
+            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-800 rounded-lg">
+              <p className="text-green-700 dark:text-green-100 text-sm font-medium">
                 ✓ Dados simulados gerados com sucesso!
               </p>
             </div>
@@ -279,11 +279,11 @@ export default function Analyzer({ onAnalysisComplete }) {
 
       {/* ECG Chart Preview */}
       {ecgData && !ecgData.imageFile && (
-        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 border border-gray-200 dark:border-gray-700">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Visualização do ECG</h3>
-              <p className="text-gray-600 text-sm">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Visualização do ECG</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Fonte: {ecgData.source} | BPM: {ecgData.bpm || 'N/A'} | Duração: {ecgData.duration.toFixed(2)}s
               </p>
             </div>
@@ -294,9 +294,9 @@ export default function Analyzer({ onAnalysisComplete }) {
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-300 rounded-lg p-4">
-          <p className="text-red-700 font-medium">⚠️ {error}</p>
-          <p className="text-red-600 text-xs mt-2">💡 Dica: Verifique se o backend está rodando em http://localhost:8080</p>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-lg p-4">
+          <p className="text-red-700 dark:text-red-100 font-medium">⚠️ {error}</p>
+          <p className="text-red-600 dark:text-red-400 text-xs mt-2">💡 Dica: Verifique se o backend está rodando em http://localhost:8080</p>
         </div>
       )}
 
@@ -327,7 +327,7 @@ export default function Analyzer({ onAnalysisComplete }) {
           </button>
           <button
             onClick={handleClear}
-            className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 font-bold py-4 px-6 rounded-lg transition-all"
+            className="flex-1 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-900 dark:text-gray-100 font-bold py-4 px-6 rounded-lg transition-all"
           >
             Limpar
           </button>
@@ -335,12 +335,12 @@ export default function Analyzer({ onAnalysisComplete }) {
       )}
 
       {/* Info Box */}
-      <div className="bg-blue-50 border border-blue-300 rounded-lg p-6">
-        <h4 className="text-lg font-bold text-blue-900 mb-3">📋 Formatos Suportados</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-blue-800 text-sm">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-800 rounded-lg p-6">
+        <h4 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-3">📋 Formatos Suportados</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-blue-800 dark:text-blue-200 text-sm">
           <div>
             <p className="font-semibold mb-2">📄 CSV</p>
-            <pre className="bg-white p-2 rounded text-xs overflow-x-auto">
+            <pre className="bg-white dark:bg-gray-700 p-2 rounded text-xs overflow-x-auto dark:text-gray-100">
 {`timestamp(ms),voltagem(mV)
 0,0.02
 4,0.05
@@ -349,7 +349,7 @@ export default function Analyzer({ onAnalysisComplete }) {
           </div>
           <div>
             <p className="font-semibold mb-2">📋 JSON</p>
-            <pre className="bg-white p-2 rounded text-xs overflow-x-auto">
+            <pre className="bg-white dark:bg-gray-700 p-2 rounded text-xs overflow-x-auto dark:text-gray-100">
 {`{
   "samplingRate": 250,
   "duration": 10.5,
@@ -359,7 +359,7 @@ export default function Analyzer({ onAnalysisComplete }) {
           </div>
           <div>
             <p className="font-semibold mb-2">🖼️ Imagem</p>
-            <p className="text-blue-700 mb-2">Formatos:</p>
+             <p className="text-blue-700 dark:text-blue-300 mb-2">Formatos:</p>
             <ul className="text-xs list-disc list-inside">
               <li>PNG</li>
               <li>JPG/JPEG</li>
