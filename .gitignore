@@ -20,3 +20,5 @@ pnpm-debug.log*
 .next/
 build/
 *.tsbuildinfo
+.vercel
+.env*
