@@ -82,14 +82,15 @@ app.use((req, res) => {
 // Error handler (deve ser o último)
 app.use(errorHandler)
 
-// ===== INICIALIZAR SERVIDOR =====
-
-app.listen(config.port, () => {
-  logger.success(`\n🏥 ECG Analyzer Backend`)
-  logger.info(`📡 Servidor rodando em http://localhost:${config.port}`)
-  logger.info(`🔧 Ambiente: ${config.nodeEnv}`)
-  logger.info(`📚 Documentação disponível em http://localhost:${config.port}`)
-  logger.success(`✅ Sistema pronto para análise de ECG\n`)
-})
-
 export default app
+
+// Só inicia o servidor se NÃO estiver no Vercel (serverless)
+if (!process.env.VERCEL) {
+  app.listen(config.port, () => {
+    logger.success(`\n🏥 ECG Analyzer Backend`)
+    logger.info(`📡 Servidor rodando em http://localhost:${config.port}`)
+    logger.info(`🔧 Ambiente: ${config.nodeEnv}`)
+    logger.info(`📚 Documentação disponível em http://localhost:${config.port}`)
+    logger.success(`✅ Sistema pronto para análise de ECG\n`)
+  })
+}
