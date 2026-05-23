@@ -65,37 +65,49 @@ export default function Analyzer({ onAnalysisComplete }) {
           /\.(png|jpg|jpeg|bmp)$/i.test(file.name)) {
         try {
           // Tentar extrair 12 derivações primeiro
-          const multiLeadData = await extract12LeadECGFromImage(file)
-          if (multiLeadData.leads && Object.keys(multiLeadData.leads).length >= 6) {
+          const [multiLeadData, singleLeadData] = await Promise.allSettled([
+            extract12LeadECGFromImage(file),
+            extractECGFromImage(file)
+          ])
+
+          const multiOk = multiLeadData.status === 'fulfilled' &&
+            multiLeadData.value?.leads &&
+            Object.keys(multiLeadData.value.leads).length >= 6
+
+          const singleOk = singleLeadData.status === 'fulfilled' &&
+            singleLeadData.value?.data?.length > 200
+
+          if (multiOk) {
             setEcgData({
-              leads: multiLeadData.leads,
-              samplingRate: multiLeadData.samplingRate || 250,
-              duration: multiLeadData.duration || 
-                multiLeadData.leads[Object.keys(multiLeadData.leads)[0]].length / 250,
+              leads: multiLeadData.value.leads,
+              data: singleOk ? singleLeadData.value.data : 
+                multiLeadData.value.leads[Object.keys(multiLeadData.value.leads)[0]],
+              samplingRate: multiLeadData.value.samplingRate || 250,
+              duration: singleOk
+                ? singleLeadData.value.data.length / 250
+                : multiLeadData.value.leads[Object.keys(multiLeadData.value.leads)[0]].length / 250,
               source: file.name,
               imageFile: file,
               isImage: true,
               is12Lead: true
             })
             setAnalysisMethod('image')
-          } else {
-            throw new Error('Poucas derivações detectadas, tentando extração simples')
-          }
-        } catch (multiError) {
-          try {
-            // Fallback: extração de derivação única
-            const extractedData = await extractECGFromImage(file)
+          } else if (singleOk) {
             setEcgData({
-              data: extractedData.data,
-              samplingRate: extractedData.samplingRate || 250,
-              duration: extractedData.duration || extractedData.data.length / 250,
+              data: singleLeadData.value.data,
+              samplingRate: singleLeadData.value.samplingRate || 250,
+              duration: singleLeadData.value.duration || singleLeadData.value.data.length / 250,
               source: file.name,
               imageFile: file,
               isImage: true
             })
             setAnalysisMethod('image')
-          } catch (imgError) {
-            // Se não conseguir extrair, criar dados padrão
+          } else {
+            throw new Error('Não foi possível extrair dados da imagem')
+          }
+        } catch (err) {
+          try {
+            // Fallback final: dados simulados
             const fallbackData = generateSimulatedECG()
             setEcgData({
               ...fallbackData,
@@ -104,6 +116,8 @@ export default function Analyzer({ onAnalysisComplete }) {
               isImage: true
             })
             setAnalysisMethod('image')
+          } catch (fallbackErr) {
+            setError(`Erro ao processar imagem: ${err.message}`)
           }
         }
       }
@@ -183,9 +197,11 @@ export default function Analyzer({ onAnalysisComplete }) {
         throw new Error('Dados de ECG vazios ou inválidos')
       }
 
-      const primaryData = ecgData.is12Lead
-        ? (ecgData.leads.I || ecgData.leads[Object.keys(ecgData.leads)[0]] || [])
-        : ecgData.data
+      const primaryData = ecgData.data && ecgData.data.length > 200
+        ? ecgData.data
+        : (ecgData.is12Lead
+          ? (ecgData.leads.I || ecgData.leads[Object.keys(ecgData.leads)[0]] || [])
+          : ecgData.data || [])
 
       const analysisPayload = {
         samplingRate: ecgData.samplingRate || 250,
