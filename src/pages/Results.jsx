@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowLeft, Download, Share2, Heart, FileText, Settings, Brain } from 'lucide-react'
 import ECGChart from '../components/ECGChart'
+import ECG12LeadChart from '../components/ECG12LeadChart'
 import DiagnosticsCard from '../components/DiagnosticsCard'
 import StatsCard from '../components/StatsCard'
 import ShareModal from '../components/ShareModal'
@@ -192,7 +193,7 @@ export default function Results({ data, onBack }) {
       </div>
 
       {/* ECG Chart */}
-      {data.ecgChart && (
+      {data.ecgChart && !data.is12Lead && (
         <div id="ecg-chart-container" className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Traçado de ECG</h3>
           <ECGChart
@@ -216,6 +217,13 @@ export default function Results({ data, onBack }) {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* 12-Lead ECG Chart */}
+      {data.is12Lead && data.leads && (
+        <div id="ecg-chart-container" className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 border border-gray-200 dark:border-gray-700">
+          <ECG12LeadChart leads={data.leads} title="ECG 12 Derivações" />
         </div>
       )}
 

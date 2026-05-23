@@ -233,4 +233,231 @@ export const extractECGFromImage = async (imageFile) => {
   })
 }
 
+// Função para extrair ECG de 12 derivações de uma imagem de printout
+export const extract12LeadECGFromImage = async (imageFile) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onload = async (e) => {
+      try {
+        const img = new Image()
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas')
+            canvas.width = img.width
+            canvas.height = img.height
+
+            const ctx = canvas.getContext('2d')
+            ctx.drawImage(img, 0, 0)
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+            const pixels = imageData.data
+            const w = canvas.width
+            const h = canvas.height
+
+            // 1. Detectar linhas de grade (horizontais e verticais)
+            // Percorrer cada linha horizontal e contar pixels escuros
+            const horizontalLineScores = []
+            for (let y = 0; y < h; y++) {
+              let darkCount = 0
+              const step = Math.max(1, Math.floor(w / 100))
+              for (let x = 0; x < w; x += step) {
+                const idx = (y * w + x) * 4
+                const r = pixels[idx], g = pixels[idx + 1], b = pixels[idx + 2]
+                const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+                if (brightness < 0.7) darkCount++
+              }
+              horizontalLineScores.push(darkCount)
+            }
+
+            const verticalLineScores = []
+            for (let x = 0; x < w; x++) {
+              let darkCount = 0
+              const step = Math.max(1, Math.floor(h / 100))
+              for (let y = 0; y < h; y += step) {
+                const idx = (y * w + x) * 4
+                const r = pixels[idx], g = pixels[idx + 1], b = pixels[idx + 2]
+                const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+                if (brightness < 0.7) darkCount++
+              }
+              verticalLineScores.push(darkCount)
+            }
+
+            // Encontrar picos nas pontuações (linhas de grade)
+            const findLines = (scores, minSpacing) => {
+              const lines = []
+              const threshold = Math.max(...scores) * 0.5
+              const halfWindow = Math.max(1, Math.floor(minSpacing * 0.15))
+              for (let i = halfWindow; i < scores.length - halfWindow; i++) {
+                let isPeak = true
+                for (let j = -halfWindow; j <= halfWindow; j++) {
+                  if (j !== 0 && scores[i + j] >= scores[i]) {
+                    isPeak = false
+                    break
+                  }
+                }
+                if (isPeak && scores[i] > threshold) {
+                  lines.push(i)
+                }
+              }
+              return lines
+            }
+
+            const spacing = Math.min(w, h) / 10
+            let hLines = findLines(horizontalLineScores, spacing)
+            let vLines = findLines(verticalLineScores, spacing)
+
+            // Agrupar linhas próximas (pegar a mediana de cada grupo)
+            const clusterLines = (lines, maxGap) => {
+              if (lines.length === 0) return []
+              const sorted = [...lines].sort((a, b) => a - b)
+              const clusters = [[sorted[0]]]
+              for (let i = 1; i < sorted.length; i++) {
+                if (sorted[i] - sorted[i - 1] < maxGap) {
+                  clusters[clusters.length - 1].push(sorted[i])
+                } else {
+                  clusters.push([sorted[i]])
+                }
+              }
+              return clusters.map(c => c[Math.floor(c.length / 2)])
+            }
+
+            const gap = Math.min(w, h) / 30
+            hLines = clusterLines(hLines, gap)
+            vLines = clusterLines(vLines, gap)
+
+            // 2. Determinar layout do grid
+            // Encontrar as 5 linhas horizontais (bordas superior/inferior + 3 divisórias)
+            // e 5 linhas verticais (bordas esquerda/direita + 3 divisórias) para 4x3
+            if (hLines.length < 3 || vLines.length < 3) {
+              // Fallback: dividir imagem em grid uniforme
+              const cellH = h / 3
+              const cellW = w / 4
+              const hBoundaries = [0, cellH, cellH * 2, h]
+              const vBoundaries = [0, cellW, cellW * 2, cellW * 3, w]
+              extractCells(hBoundaries, vBoundaries)
+            } else {
+              // Selecionar as linhas mais relevantes
+              const selectOuterLines = (lines, count) => {
+                if (lines.length <= count) return lines
+                const first = lines[0]
+                const last = lines[lines.length - 1]
+                const step = (last - first) / (count - 1)
+                const result = [first]
+                for (let i = 1; i < count - 1; i++) {
+                  const target = first + step * i
+                  let closest = lines[0]
+                  let minDist = Infinity
+                  for (const l of lines) {
+                    const d = Math.abs(l - target)
+                    if (d < minDist) { minDist = d; closest = l }
+                  }
+                  result.push(closest)
+                }
+                result.push(last)
+                return result
+              }
+
+              const hBounds = selectOuterLines(hLines, 4)
+              const vBounds = selectOuterLines(vLines, 5)
+              extractCells(hBounds, vBounds)
+            }
+
+            function extractCells(hBoundaries, vBoundaries) {
+              const leads = {}
+              const names = ['I', 'II', 'III', 'aVR', 'aVL', 'aVF', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6']
+              let idx = 0
+
+              for (let row = 0; row < hBoundaries.length - 1; row++) {
+                for (let col = 0; col < vBoundaries.length - 1; col++) {
+                  if (idx >= names.length) break
+                  const x1 = Math.round(vBoundaries[col])
+                  const x2 = Math.round(vBoundaries[col + 1])
+                  const y1 = Math.round(hBoundaries[row])
+                  const y2 = Math.round(hBoundaries[row + 1])
+                  const cellW = x2 - x1
+                  const cellH = y2 - y1
+
+                  if (cellW < 10 || cellH < 10) { idx++; continue }
+
+                  // Extrair traçado desta célula
+                  const trace = []
+                  for (let x = x1; x < x2; x++) {
+                    let bestY = -1
+                    let bestScore = -Infinity
+                    for (let y = y1; y < y2; y++) {
+                      const pIdx = (y * w + x) * 4
+                      const r = pixels[pIdx], g = pixels[pIdx + 1], b = pixels[pIdx + 2]
+                      const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+                      const isGrid = (r > 200 && g > 150 && b > 150) ? 0.3 : 0
+                      const score = (1 - brightness) - isGrid
+                      if (score > bestScore && score > 0.3) {
+                        bestScore = score
+                        bestY = y
+                      }
+                    }
+                    trace.push(bestY >= 0 ? bestY : (y1 + y2) / 2)
+                  }
+
+                  // Normalizar
+                  const minY = Math.min(...trace)
+                  const maxY = Math.max(...trace)
+                  const range = maxY - minY || 1
+                  const normalized = trace.map(y => -2 * ((y - minY) / range - 0.5))
+
+                  // Resample
+                  const targetLen = Math.floor(cellW / 2)
+                  const resampled = []
+                  for (let i = 0; i < targetLen; i++) {
+                    const srcIdx = (i / targetLen) * normalized.length
+                    const lower = Math.floor(srcIdx)
+                    const upper = Math.min(lower + 1, normalized.length - 1)
+                    const frac = srcIdx - lower
+                    resampled.push(normalized[lower] * (1 - frac) + normalized[upper] * frac)
+                  }
+
+                  // Suavizar
+                  const kernel = 2
+                  const smoothed = []
+                  for (let i = 0; i < resampled.length; i++) {
+                    let sum = 0, count = 0
+                    for (let j = -kernel; j <= kernel; j++) {
+                      const p = i + j
+                      if (p >= 0 && p < resampled.length) { sum += resampled[p]; count++ }
+                    }
+                    smoothed.push(sum / count)
+                  }
+
+                  // Remover DC offset
+                  const mean = smoothed.reduce((a, b) => a + b, 0) / smoothed.length
+                  leads[names[idx]] = smoothed.map(v => v - mean)
+                  idx++
+                }
+              }
+
+              console.log('12 derivações extraídas:', Object.keys(leads).length,
+                'de', names.length, '| leads:', Object.keys(leads).join(','))
+
+              resolve({
+                leads,
+                samplingRate: 250,
+                duration: leads[Object.keys(leads)[0]]?.length / 250 || 10,
+                source: imageFile.name
+              })
+            }
+          } catch (error) {
+            reject(new Error(`Erro ao processar pixels: ${error.message}`))
+          }
+        }
+        img.onerror = () => reject(new Error('Erro ao carregar a imagem'))
+        img.src = e.target.result
+      } catch (error) {
+        reject(new Error(`Erro ao processar imagem: ${error.message}`))
+      }
+    }
+    reader.onerror = () => reject(new Error('Erro ao ler arquivo'))
+    reader.readAsDataURL(imageFile)
+  })
+}
+
 export default api

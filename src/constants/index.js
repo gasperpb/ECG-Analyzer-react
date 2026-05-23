@@ -137,3 +137,23 @@ export const DATA_LIMITS = {
   MIN_POINTS: 250,
   MAX_POINTS: 500000
 }
+
+// Derivações do ECG
+export const LEADS_12 = ['I', 'II', 'III', 'aVR', 'aVL', 'aVF', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6']
+
+export const LEAD_LAYOUT = {
+  rows: 3,
+  cols: 4,
+  grid: [
+    ['I', 'aVR', 'V1', 'V4'],
+    ['II', 'aVL', 'V2', 'V5'],
+    ['III', 'aVF', 'V3', 'V6']
+  ]
+}
+
+export const LEAD_COLORS = {
+  I: '#e74c3c', II: '#2ecc71', III: '#3498db',
+  aVR: '#9b59b6', aVL: '#f39c12', aVF: '#1abc9c',
+  V1: '#e67e22', V2: '#2c3e50', V3: '#d35400',
+  V4: '#27ae60', V5: '#2980b9', V6: '#8e44ad'
+}

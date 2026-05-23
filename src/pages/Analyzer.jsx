@@ -4,18 +4,25 @@ import FileUpload from '../components/FileUpload'
 import ImagePreview from '../components/ImagePreview'
 import OCRTips from '../components/OCRTips'
 import ECGChart from '../components/ECGChart'
+import ECG12LeadChart from '../components/ECG12LeadChart'
 import Loading from '../components/Loading'
 import VitalSignsInput from '../components/VitalSignsInput'
 import ECGFeaturesInput from '../components/ECGFeaturesInput'
-import { ecgService, generateSimulatedECG, extractECGFromImage } from '../services/api'
+import { ecgService, generateSimulatedECG, extractECGFromImage, extract12LeadECGFromImage } from '../services/api'
 import { analyzeDiagnosis } from '../services/diagnosticEngine'
+import diagnosticEngine from '../services/diagnosticEngine'
+const { analyzeIschemia } = diagnosticEngine
 
 // Função para gerar análise simulada (fallback quando backend não responde)
 const generateSimulatedAnalysis = (ecgData, vitalSigns = {}, ecgFeatures = {}) => {
-  // Usar motor de diagnóstico avançado com dados brutos e características
-  const advancedAnalysis = analyzeDiagnosis(ecgData, vitalSigns, ecgFeatures)
-  
-  return {
+  // Para 12 derivações, usar a derivação I como principal para análise
+  const ecgInput = ecgData.is12Lead
+    ? { ...ecgData, data: ecgData.leads?.I || ecgData.leads?.[Object.keys(ecgData.leads)[0]] || [] }
+    : ecgData
+
+  const advancedAnalysis = analyzeDiagnosis(ecgInput, vitalSigns, ecgFeatures)
+
+  const result = {
     bpm: ecgData.bpm || 72,
     rhythm: ecgData.rhythm || 'Sinusal Normal',
     pr: ecgData.pr || 160,
@@ -28,6 +35,13 @@ const generateSimulatedAnalysis = (ecgData, vitalSigns = {}, ecgFeatures = {}) =
     vitalSignsIncluded: Object.keys(vitalSigns).length > 0,
     stSegmentIndices: advancedAnalysis.stSegmentIndices || []
   }
+
+  if (ecgData.is12Lead) {
+    result.is12Lead = true
+    result.leads = ecgData.leads
+  }
+
+  return result
 }
 
 export default function Analyzer({ onAnalysisComplete }) {
@@ -50,28 +64,47 @@ export default function Analyzer({ onAnalysisComplete }) {
       if (['image/png', 'image/jpeg', 'image/jpg', 'image/bmp'].includes(file.type) || 
           /\.(png|jpg|jpeg|bmp)$/i.test(file.name)) {
         try {
-          // Tentar extrair dados da imagem
-          const extractedData = await extractECGFromImage(file)
-          
-          setEcgData({
-            data: extractedData.data,
-            samplingRate: extractedData.samplingRate || 250,
-            duration: extractedData.duration || extractedData.data.length / 250,
-            source: file.name,
-            imageFile: file,
-            isImage: true
-          })
-          setAnalysisMethod('image')
-        } catch (imgError) {
-          // Se não conseguir extrair automaticamente, criar dados padrão a partir da imagem
-          const fallbackData = generateSimulatedECG()
-          setEcgData({
-            ...fallbackData,
-            source: `Imagem: ${file.name}`,
-            imageFile: file,
-            isImage: true
-          })
-          setAnalysisMethod('image')
+          // Tentar extrair 12 derivações primeiro
+          const multiLeadData = await extract12LeadECGFromImage(file)
+          if (multiLeadData.leads && Object.keys(multiLeadData.leads).length >= 6) {
+            setEcgData({
+              leads: multiLeadData.leads,
+              samplingRate: multiLeadData.samplingRate || 250,
+              duration: multiLeadData.duration || 
+                multiLeadData.leads[Object.keys(multiLeadData.leads)[0]].length / 250,
+              source: file.name,
+              imageFile: file,
+              isImage: true,
+              is12Lead: true
+            })
+            setAnalysisMethod('image')
+          } else {
+            throw new Error('Poucas derivações detectadas, tentando extração simples')
+          }
+        } catch (multiError) {
+          try {
+            // Fallback: extração de derivação única
+            const extractedData = await extractECGFromImage(file)
+            setEcgData({
+              data: extractedData.data,
+              samplingRate: extractedData.samplingRate || 250,
+              duration: extractedData.duration || extractedData.data.length / 250,
+              source: file.name,
+              imageFile: file,
+              isImage: true
+            })
+            setAnalysisMethod('image')
+          } catch (imgError) {
+            // Se não conseguir extrair, criar dados padrão
+            const fallbackData = generateSimulatedECG()
+            setEcgData({
+              ...fallbackData,
+              source: `Imagem: ${file.name}`,
+              imageFile: file,
+              isImage: true
+            })
+            setAnalysisMethod('image')
+          }
         }
       }
       // Se é um arquivo CSV ou texto
@@ -142,16 +175,24 @@ export default function Analyzer({ onAnalysisComplete }) {
 
     try {
       // Validar dados
-      if (!ecgData.data || ecgData.data.length === 0) {
+      if (ecgData.is12Lead) {
+        if (!ecgData.leads || Object.keys(ecgData.leads).length === 0) {
+          throw new Error('Dados de ECG (12 derivações) vazios ou inválidos')
+        }
+      } else if (!ecgData.data || ecgData.data.length === 0) {
         throw new Error('Dados de ECG vazios ou inválidos')
       }
 
+      const primaryData = ecgData.is12Lead
+        ? (ecgData.leads.I || ecgData.leads[Object.keys(ecgData.leads)[0]] || [])
+        : ecgData.data
+
       const analysisPayload = {
         samplingRate: ecgData.samplingRate || 250,
-        duration: ecgData.duration || ecgData.data.length / 250,
-        data: ecgData.data,
+        duration: ecgData.duration || primaryData.length / 250,
+        data: primaryData,
         vitalSigns: vitalSigns,
-        ecgFeatures: ecgFeatures // Adicionar características do ECG
+        ecgFeatures: ecgFeatures
       }
 
       console.log('Enviando para análise:', analysisPayload)
@@ -166,6 +207,37 @@ export default function Analyzer({ onAnalysisComplete }) {
         results.ecgChart = ecgData
         results.source = ecgData.source || 'Dados do Usuário'
         results.vitalSignsIncluded = Object.keys(vitalSigns).length > 0
+        if (ecgData.is12Lead) {
+          results.is12Lead = true
+          results.leads = ecgData.leads
+        }
+
+        // Rodar análise de isquemia local (frontend) independente do backend
+        const ecgInput = { data: primaryData, samplingRate: ecgData.samplingRate || 250 }
+        const localIschemia = analyzeIschemia(ecgInput, ecgFeatures)
+
+        // Se o frontend detectou isquemia/infarto e o backend não, mesclar
+        const hasSTEMI = results.diagnoses?.some(d =>
+          d.name?.toLowerCase().includes('stemi') || d.name?.toLowerCase().includes('supra st'))
+        const hasNSTEMI = results.diagnoses?.some(d =>
+          d.name?.toLowerCase().includes('nstemi') || d.name?.toLowerCase().includes('infra'))
+        const hasIschemia = results.diagnoses?.some(d =>
+          d.name?.toLowerCase().includes('isquemi'))
+
+        if (localIschemia.diagnoses?.length > 0 && !hasSTEMI && !hasNSTEMI && !hasIschemia) {
+          results.diagnoses = [...(results.diagnoses || []), ...localIschemia.diagnoses]
+          results.diagnoses.sort((a, b) => {
+            const order = { critical: 0, danger: 1, warning: 2, attention: 3, normal: 4 }
+            return (order[a.severity] || 4) - (order[b.severity] || 4)
+          })
+          if (localIschemia.severity === 'critical') results.overallSeverity = 'critical'
+          if (localIschemia.riskLevel === 'high') results.riskLevel = 'high'
+        }
+
+        // Garantir stSegmentIndices para o overlay do gráfico
+        if (!results.stSegmentIndices || results.stSegmentIndices.length === 0) {
+          results.stSegmentIndices = localIschemia.stSegmentIndices || []
+        }
         
         onAnalysisComplete(results)
       } catch (apiError) {
@@ -279,7 +351,7 @@ export default function Analyzer({ onAnalysisComplete }) {
       )}
 
       {/* ECG Chart Preview */}
-      {ecgData && !ecgData.imageFile && (
+      {ecgData && !ecgData.imageFile && !ecgData.is12Lead && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 border border-gray-200 dark:border-gray-700">
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -290,6 +362,21 @@ export default function Analyzer({ onAnalysisComplete }) {
             </div>
           </div>
           <ECGChart data={ecgData.data} title="ECG - Pré-análise" />
+        </div>
+      )}
+
+      {/* 12-Lead ECG Preview */}
+      {ecgData && ecgData.is12Lead && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 border border-gray-200 dark:border-gray-700">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">ECG 12 Derivações</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                Fonte: {ecgData.source} | {Object.keys(ecgData.leads).length} derivações detectadas
+              </p>
+            </div>
+          </div>
+          <ECG12LeadChart leads={ecgData.leads} title="ECG 12 Derivações - Pré-análise" />
         </div>
       )}
 
