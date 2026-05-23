@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,7 +23,41 @@ ChartJS.register(
   Filler
 )
 
-export default function ECGChart({ data, title = 'Gráfico de ECG' }) {
+const infarctionPlugin = {
+  id: 'infarctionZones',
+  afterDraw: (chart) => {
+    const zones = chart.config.options.plugins?.infarctionZones?.zones
+    if (!zones || zones.length === 0) return
+
+    const ctx = chart.ctx
+    const xAxis = chart.scales.x
+    const yAxis = chart.scales.y
+
+    zones.forEach((zone) => {
+      const x1 = xAxis.getPixelForValue(zone.start)
+      const x2 = xAxis.getPixelForValue(zone.end)
+
+      ctx.save()
+      if (zone.type === 'elevation') {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.25)'
+      } else {
+        ctx.fillStyle = 'rgba(234, 179, 8, 0.25)'
+      }
+      ctx.fillRect(x1, yAxis.top, x2 - x1, yAxis.bottom - yAxis.top)
+
+      if (zone.type === 'elevation') {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.9)'
+      } else {
+        ctx.fillStyle = 'rgba(234, 179, 8, 0.9)'
+      }
+      ctx.font = 'bold 11px sans-serif'
+      ctx.fillText(zone.type === 'elevation' ? '↑ SUPRA ST' : '↓ INFRA ST', x1 + 4, yAxis.top + 16)
+      ctx.restore()
+    })
+  }
+}
+
+export default function ECGChart({ data, title = 'Gráfico de ECG', highlightRegions }) {
   if (!data || !data.length) {
     return (
       <div className="flex items-center justify-center h-96 bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
@@ -33,23 +68,27 @@ export default function ECGChart({ data, title = 'Gráfico de ECG' }) {
     )
   }
 
-  const labels = data.map((_, index) => {
-    const time = (index / 250).toFixed(2)
-    return time
-  })
-
   const samplingRate = Math.max(1, Math.floor(data.length / 1000))
-  const filteredData = data.filter((_, i) => i % samplingRate === 0)
-  const filteredLabels = labels.filter((_, i) => i % samplingRate === 0)
+  const filteredData = []
+  const filteredTime = []
+  for (let i = 0; i < data.length; i += samplingRate) {
+    filteredData.push(data[i])
+    filteredTime.push(i / 250)
+  }
 
   const isDark = document.documentElement.classList.contains('dark')
 
+  const zones = highlightRegions?.map(r => ({
+    start: r.start / 250,
+    end: r.end / 250,
+    type: r.type
+  })) || []
+
   const chartData = {
-    labels: filteredLabels,
     datasets: [
       {
         label: 'ECG (mV)',
-        data: filteredData,
+        data: filteredTime.map((t, i) => ({ x: t, y: filteredData[i] })),
         borderColor: '#0ea5e9',
         backgroundColor: isDark ? 'rgba(14, 165, 233, 0.1)' : 'rgba(14, 165, 233, 0.05)',
         borderWidth: 2,
@@ -98,10 +137,11 @@ export default function ECGChart({ data, title = 'Gráfico de ECG' }) {
             return `${context.raw.toFixed(3)} mV`
           },
           title: function(context) {
-            return `${context[0].label}s`
+            return `${typeof context[0].label === 'number' ? context[0].label.toFixed(2) : context[0].label}s`
           }
         }
-      }
+      },
+      infarctionZones: { zones }
     },
     scales: {
       y: {
@@ -120,6 +160,7 @@ export default function ECGChart({ data, title = 'Gráfico de ECG' }) {
         }
       },
       x: {
+        type: 'linear',
         title: {
           display: true,
           text: 'Tempo (segundos)',
@@ -138,7 +179,7 @@ export default function ECGChart({ data, title = 'Gráfico de ECG' }) {
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-      <Line data={chartData} options={options} height={300} />
+      <Line data={chartData} options={options} plugins={[infarctionPlugin]} height={300} />
     </div>
   )
 }

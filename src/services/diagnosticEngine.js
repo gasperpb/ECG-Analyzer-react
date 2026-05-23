@@ -3,7 +3,7 @@
  * Analyzes ECG data along with vital signs for comprehensive diagnosis
  */
 
-export const analyzeDiagnosis = (ecgData, vitalSigns = {}) => {
+export const analyzeDiagnosis = (ecgData, vitalSigns = {}, ecgFeatures = {}) => {
   const diagnoses = []
   const recommendations = []
   let riskLevel = 'low'
@@ -16,6 +16,14 @@ export const analyzeDiagnosis = (ecgData, vitalSigns = {}) => {
   if (ecgDiagnosis.riskLevel === 'high') riskLevel = 'high'
   if (ecgDiagnosis.severity === 'critical') overallSeverity = 'critical'
   else if (ecgDiagnosis.severity === 'warning' && overallSeverity !== 'critical') overallSeverity = 'warning'
+
+  // Ischemia / infarction analysis from raw waveform or features
+  const ischemiaDiagnosis = analyzeIschemia(ecgData, ecgFeatures)
+  diagnoses.push(...ischemiaDiagnosis.diagnoses)
+  recommendations.push(...ischemiaDiagnosis.recommendations)
+  if (ischemiaDiagnosis.riskLevel === 'high') riskLevel = 'high'
+  if (ischemiaDiagnosis.severity === 'critical') overallSeverity = 'critical'
+  else if (ischemiaDiagnosis.severity === 'warning' && overallSeverity !== 'critical') overallSeverity = 'warning'
 
   // Vital signs-based analysis
   if (Object.keys(vitalSigns).length > 0) {
@@ -50,7 +58,8 @@ export const analyzeDiagnosis = (ecgData, vitalSigns = {}) => {
     recommendations: uniqueRecommendations,
     riskLevel,
     overallSeverity,
-    summaryInterpretation: generateInterpretation(uniqueDiagnoses, ecgData, vitalSigns)
+    summaryInterpretation: generateInterpretation(uniqueDiagnoses, ecgData, vitalSigns),
+    stSegmentIndices: ischemiaDiagnosis.stSegmentIndices || []
   }
 }
 
@@ -367,6 +376,188 @@ const analyzeVitalSigns = (vitals) => {
   return { diagnoses, recommendations, riskLevel, severity }
 }
 
+// Analyze raw ECG waveform for ischemia / infarction patterns
+const analyzeIschemia = (ecgData, ecgFeatures = {}) => {
+  const diagnoses = []
+  const recommendations = []
+  let riskLevel = 'low'
+  let severity = 'normal'
+  let stSegmentIndices = []
+
+  const hasStElevation =
+    ecgFeatures.stElevation === true ||
+    ecgFeatures.stElevation === 'true'
+  const hasStDepression =
+    ecgFeatures.stDepression === true ||
+    ecgFeatures.stDepression === 'true'
+  const hasTWaveInversion =
+    ecgFeatures.tWaveInversion === true ||
+    ecgFeatures.tWaveInversion === 'true'
+  const hasPathologicalQ =
+    ecgFeatures.pathologicalQ === true ||
+    ecgFeatures.pathologicalQ === 'true'
+  const hasHyperacuteT =
+    ecgFeatures.tallTWaves === true ||
+    ecgFeatures.tallTWaves === 'true'
+
+  // Detect ST changes from raw waveform if available
+  const rawData = Array.isArray(ecgData) ? ecgData : (ecgData.data || null)
+  let detectedStElevation = null
+  let detectedStDepression = null
+  let detectedTInversion = null
+
+  if (rawData && rawData.length > 100) {
+    const samplingRate = ecgData.samplingRate || 250
+    const windowSize = samplingRate
+    const stThreshold = 0.15
+
+    for (let i = 0; i < rawData.length - windowSize; i += Math.floor(windowSize * 0.5)) {
+      const window = rawData.slice(i, i + windowSize)
+      const maxVal = Math.max(...window)
+      const maxIndex = window.indexOf(maxVal)
+      const qrsEnd = maxIndex + Math.floor(windowSize * 0.08)
+
+      if (qrsEnd + 10 < window.length) {
+        const stSegment = window.slice(qrsEnd, qrsEnd + Math.floor(windowSize * 0.06))
+        if (stSegment.length > 0) {
+          const stMean = stSegment.reduce((a, b) => a + b, 0) / stSegment.length
+          const stPercentile = stMean / Math.max(Math.abs(maxVal), 0.01)
+
+          if (stPercentile > stThreshold) {
+            detectedStElevation = { confidence: Math.min(95, stPercentile * 180), magnitude: stPercentile }
+            stSegmentIndices.push({ start: i + qrsEnd, end: i + qrsEnd + stSegment.length, type: 'elevation' })
+          } else if (stPercentile < -stThreshold * 0.7) {
+            detectedStDepression = { confidence: Math.min(85, Math.abs(stPercentile) * 150), magnitude: Math.abs(stPercentile) }
+            stSegmentIndices.push({ start: i + qrsEnd, end: i + qrsEnd + stSegment.length, type: 'depression' })
+          }
+        }
+      }
+
+      // Detect T wave inversion
+      const tRegion = window.slice(maxIndex + Math.floor(windowSize * 0.12), maxIndex + Math.floor(windowSize * 0.35))
+      if (tRegion.length > 5) {
+        const tMin = Math.min(...tRegion)
+        const tMax = Math.max(...tRegion)
+        if (tMin < -0.15 && tMax > 0.4) {
+          detectedTInversion = { confidence: 75 }
+        }
+      }
+    }
+  }
+
+  const hasSTE = hasStElevation || detectedStElevation !== null
+  const hasSTD = hasStDepression || detectedStDepression !== null
+  const hasTWI = hasTWaveInversion || detectedTInversion !== null
+
+  // === STEMI (IAM com Supra ST) ===
+  if (hasSTE) {
+    const confidence = detectedStElevation?.confidence || 85
+    diagnoses.push({
+      name: 'IAM com Supradesnivelamento ST (STEMI)',
+      severity: 'critical',
+      description: detectedStElevation
+        ? `Supradesnivelamento do segmento ST detectado na análise da onda (magnitude: ${(detectedStElevation.magnitude * 100).toFixed(0)}%). IAM com supra ST em evolução.`
+        : 'Supradesnivelamento do segmento ST indicado na seleção de características. IAM com supra ST provável.',
+      details: {
+        'Tipo': 'STEMI (IAM com supra ST)',
+        'Segmento ST': detectedStElevation ? `${(detectedStElevation.magnitude * 100).toFixed(0)}% acima da linha de base` : 'Elevado',
+        'Recomendação Imediata': 'Ativar via verde coronária'
+      },
+      recommendation: 'EMERGÊNCIA: Ativar via verde coronária. AAS 300mg + clopidogrel 300mg + heparina. Avaliar angioplastia primária ou trombólise.',
+      commonCauses: ['Aterosclerose coronária', 'Trombose coronária aguda', 'Espasmo coronário'],
+      segmentIndices: stSegmentIndices
+    })
+    riskLevel = 'high'
+    severity = 'critical'
+    recommendations.push('EMERGÊNCIA CARDÍACA: Ativar via verde coronária imediatamente')
+    recommendations.push('AAS 300mg + clopidogrel 300mg (dose de carga)')
+    recommendations.push('Heparina não fracionada 60UI/kg (bolus) + 12UI/kg/h')
+    recommendations.push('Avaliar angioplastia primária ou trombólise')
+    recommendations.push('Monitorização cardíaca contínua em UTI')
+  }
+
+  // === NSTEMI / Isquemia (Infra ST / Inversão T) ===
+  if ((hasSTD || hasTWI) && !hasSTE) {
+    const diagName = hasSTD
+      ? 'IAM sem Supra ST / Isquemia Miocárdica (NSTEMI)'
+      : 'Isquemia Miocárdica (Inversão de Onda T)'
+    const severityLevel = hasSTD ? 'critical' : 'warning'
+    const description = hasSTD
+      ? 'Infradesnivelamento do segmento ST detectado — síndrome coronária aguda sem supra de ST (SCASSST).'
+      : 'Inversão de onda T detectada — possível isquemia miocárdica.'
+
+    diagnoses.push({
+      name: diagName,
+      severity: severityLevel,
+      description,
+      details: {
+        'Tipo': hasSTD ? 'NSTEMI (SCA sem supra ST)' : 'Isquemia Miocárdica',
+        'Alteração': hasSTD ? 'Infradesnivelamento ST' : 'Inversão Onda T',
+        'Recomendação Imediata': 'Troponina seriada + ECG seriado'
+      },
+      recommendation: hasSTD
+        ? 'URGENTE: Troponina seriada. ECG seriado. AAS + anticoagulação. Avaliar angiografia. Score GRACE/TIMI.'
+        : 'Avaliar síndrome coronária aguda. Troponina seriada. ECG em 6-12h. Ecocardiograma.',
+      commonCauses: ['Aterosclerose coronária', 'Plaqueta instável', 'Trombose suboclusiva', 'Espasmo coronário'],
+      segmentIndices: stSegmentIndices
+    })
+    riskLevel = 'high'
+    severity = severityLevel
+    recommendations.push(hasSTD
+      ? 'URGENTE: Troponina seriada (0h, 3h, 6h) — alta suspeita de NSTEMI'
+      : 'Troponina seriada para excluir lesão miocárdica')
+    recommendations.push('AAS 300mg (dose de carga)')
+    if (hasSTD) {
+      recommendations.push('Anticoagulação (enoxaparina ou heparina)')
+      recommendations.push('Avaliar angiografia coronária nas próximas 24-48h')
+    }
+  }
+
+  // === Onda Q patológica (enfarte antigo) ===
+  if (hasPathologicalQ) {
+    diagnoses.push({
+      name: 'Onda Q Patológica (Enfarte Antigo / Cicatriz)',
+      severity: 'warning',
+      description: 'Presença de onda Q patológica — sugere enfarte do miocárdio prévio com cicatriz.',
+      details: {
+        'Tipo': 'Enfarte Antigo',
+        'Significado': 'Cicatriz miocárdica de IAM prévio'
+      },
+      recommendation: 'Ecocardiograma para avaliar função ventricular. Avaliar necessidade de CDI se FE < 35%.',
+      commonCauses: ['IAM prévio', 'Miocardiopatia dilatada', 'Miocardite']
+    })
+    if (riskLevel !== 'high') riskLevel = 'high'
+    if (severity !== 'critical') severity = 'warning'
+    recommendations.push('Ecocardiograma com avaliação de fração de ejeção')
+    recommendations.push('Avaliar cardioproteção (IECA, betabloqueador, estatina)')
+  }
+
+  // === Ondas T hiperagudas (fase hiperaguda do IAM) ===
+  if (hasHyperacuteT && !hasSTE) {
+    diagnoses.push({
+      name: 'Ondas T Hiperagudas (Fase Muito Precoce de IAM)',
+      severity: 'critical',
+      description: 'Ondas T altas e picudas simétricas — fase hiperaguda de IAM, precedendo o supra ST.',
+      recommendation: 'EMERGÊNCIA: Repetir ECG em 15-30min. Provável IAM em evolução. Preparar via verde coronária.',
+      commonCauses: ['IAM em fase hiperaguda (primeiros minutos)', 'Hipercalémia (diagnóstico diferencial)']
+    })
+    riskLevel = 'high'
+    severity = 'critical'
+    recommendations.push('Repetir ECG em 15-30 minutos para documentar evolução')
+    recommendations.push('Preparar via verde coronária — provável IAM evoluindo com supra ST')
+  }
+
+  // === Síndrome Coronária Aguda (combinação de alterações) ===
+  if (hasSTE || hasSTD || hasTWI) {
+    recommendations.push('ECG de 12 derivações completo para localizar parede afetada')
+    recommendations.push('Monitorização cardíaca contínua')
+    recommendations.push('Avaliar dor torácica: características, irradiação, fatores de alívio/agravamento')
+    recommendations.push('Ecocardiograma urgente para avaliar mobilidade segmentar')
+  }
+
+  return { diagnoses, recommendations, riskLevel, severity, stSegmentIndices }
+}
+
 // Analyze combined conditions (correlations between ECG and vital signs)
 const analyzeCombinedConditions = (ecgData, vitals) => {
   const diagnoses = []
@@ -466,5 +657,6 @@ export default {
   analyzeECGPatterns,
   analyzeVitalSigns,
   analyzeCombinedConditions,
+  analyzeIschemia,
   generateInterpretation
 }

@@ -195,7 +195,27 @@ export default function Results({ data, onBack }) {
       {data.ecgChart && (
         <div id="ecg-chart-container" className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Traçado de ECG</h3>
-          <ECGChart data={data.ecgChart.data} title="ECG Analisado" />
+          <ECGChart
+            data={data.ecgChart.data}
+            title="ECG Analisado"
+            highlightRegions={data.stSegmentIndices}
+          />
+          {data.stSegmentIndices && data.stSegmentIndices.length > 0 && (
+            <div className="mt-4 flex gap-4 text-sm">
+              {data.stSegmentIndices.some(r => r.type === 'elevation') && (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-red-400/30 border border-red-500"></div>
+                  <span className="text-gray-700 dark:text-gray-300">Supradesnivelamento ST (zona de enfarte)</span>
+                </div>
+              )}
+              {data.stSegmentIndices.some(r => r.type === 'depression') && (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-yellow-400/30 border border-yellow-500"></div>
+                  <span className="text-gray-700 dark:text-gray-300">Infradesnivelamento ST (isquemia)</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

@@ -11,9 +11,9 @@ import { ecgService, generateSimulatedECG, extractECGFromImage } from '../servic
 import { analyzeDiagnosis } from '../services/diagnosticEngine'
 
 // Função para gerar análise simulada (fallback quando backend não responde)
-const generateSimulatedAnalysis = (ecgData, vitalSigns = {}) => {
-  // Usar motor de diagnóstico avançado
-  const advancedAnalysis = analyzeDiagnosis(ecgData, vitalSigns)
+const generateSimulatedAnalysis = (ecgData, vitalSigns = {}, ecgFeatures = {}) => {
+  // Usar motor de diagnóstico avançado com dados brutos e características
+  const advancedAnalysis = analyzeDiagnosis(ecgData, vitalSigns, ecgFeatures)
   
   return {
     bpm: ecgData.bpm || 72,
@@ -25,7 +25,8 @@ const generateSimulatedAnalysis = (ecgData, vitalSigns = {}) => {
     recommendations: advancedAnalysis.recommendations,
     diagnoses: advancedAnalysis.diagnoses,
     riskLevel: advancedAnalysis.riskLevel,
-    vitalSignsIncluded: Object.keys(vitalSigns).length > 0
+    vitalSignsIncluded: Object.keys(vitalSigns).length > 0,
+    stSegmentIndices: advancedAnalysis.stSegmentIndices || []
   }
 }
 
@@ -170,8 +171,8 @@ export default function Analyzer({ onAnalysisComplete }) {
       } catch (apiError) {
         console.warn('Backend não disponível, usando análise simulada:', apiError.message)
         
-        // Fallback: gerar análise simulada com sinais vitais
-        const simulatedResults = generateSimulatedAnalysis(ecgData, vitalSigns)
+        // Fallback: gerar análise simulada com sinais vitais e características
+        const simulatedResults = generateSimulatedAnalysis(ecgData, vitalSigns, ecgFeatures)
         simulatedResults.ecgChart = ecgData
         simulatedResults.source = ecgData.source || 'Dados do Usuário'
         simulatedResults.isSimulated = true
