@@ -79,6 +79,7 @@ export class ECGService {
       riskLevel: severityInfo.riskLevel,
       vitalSignsIncluded: vitalSigns && Object.keys(vitalSigns).length > 0,
       potassium: vitalSigns?.potassium || null,
+      stSegmentIndices: ecgAnalysis.stSegmentIndices || [],
       ecgChart: {
         data,
         samplingRate: samplingRate || 250,

@@ -95,6 +95,10 @@ export function analyzeECG(data) {
     })
   }
 
+  // Análise de isquemia/infarto
+  const ischemiaAnalysis = analyzeIschemia(ecgData)
+  diagnoses.push(...ischemiaAnalysis.diagnoses)
+
   // Se nenhum diagnóstico foi encontrado
   if (diagnoses.length === 0) {
     diagnoses.push({
@@ -112,6 +116,7 @@ export function analyzeECG(data) {
     qrsWidth,
     qtInterval,
     prInterval,
+    stSegmentIndices: ischemiaAnalysis.stSegmentIndices,
     riskLevel: calculateRiskLevel(diagnoses),
     overallSeverity: calculateSeverity(diagnoses)
   }
@@ -1479,6 +1484,92 @@ function analyzePR(data) {
 
   if (prIntervals.length === 0) return Math.random() * 60 + 140
   return prIntervals.reduce((a, b) => a + b, 0) / prIntervals.length
+}
+
+function analyzeIschemia(data) {
+  if (!data || data.length < 250) {
+    return { diagnoses: [], stSegmentIndices: [] }
+  }
+
+  const diagnoses = []
+  const stSegmentIndices = []
+  const peaks = findPeaks(data)
+  if (peaks.length < 2) return { diagnoses: [], stSegmentIndices: [] }
+
+  // Compute global baseline (isoelectric level)
+  const sorted = [...data].sort((a, b) => a - b)
+  const middleSegment = sorted.slice(Math.floor(sorted.length * 0.2), Math.floor(sorted.length * 0.8))
+  const baseline = middleSegment.length > 0
+    ? middleSegment.reduce((a, b) => a + b, 0) / middleSegment.length
+    : 0
+
+  const samplingRate = 250
+  let hasStElevation = false
+  let hasStDepression = false
+  let stMagnitude = 0
+
+  for (const rIdx of peaks) {
+    if (rIdx + Math.floor(0.14 * samplingRate) >= data.length) continue
+
+    // ST segment: 60ms to 140ms after R peak
+    const stStart = rIdx + Math.floor(0.060 * samplingRate)
+    const stEnd = rIdx + Math.floor(0.140 * samplingRate)
+    if (stEnd >= data.length) continue
+
+    // Measure ST segment deviation from baseline
+    const stValues = []
+    for (let j = stStart; j < stEnd; j++) {
+      stValues.push(data[j] - baseline)
+    }
+    const stDev = stValues.reduce((a, b) => a + b, 0) / stValues.length
+
+    if (stDev > 0.10) {
+      hasStElevation = true
+      stMagnitude = Math.max(stMagnitude, stDev)
+      stSegmentIndices.push({ start: stStart, end: stEnd, type: 'elevation' })
+    } else if (stDev < -0.05) {
+      hasStDepression = true
+      stMagnitude = Math.max(stMagnitude, Math.abs(stDev))
+      stSegmentIndices.push({ start: stStart, end: stEnd, type: 'depression' })
+    }
+  }
+
+  // Merge overlapping zones
+  if (stSegmentIndices.length > 1) {
+    stSegmentIndices.sort((a, b) => a.start - b.start)
+    const merged = [stSegmentIndices[0]]
+    for (let k = 1; k < stSegmentIndices.length; k++) {
+      const last = merged[merged.length - 1]
+      if (stSegmentIndices[k].start <= last.end && stSegmentIndices[k].type === last.type) {
+        last.end = Math.max(last.end, stSegmentIndices[k].end)
+      } else {
+        merged.push(stSegmentIndices[k])
+      }
+    }
+    stSegmentIndices.splice(0, stSegmentIndices.length, ...merged)
+  }
+
+  if (hasStElevation) {
+    const stMag = `${(stMagnitude * 10).toFixed(1)}mm (${(stMagnitude * 1000).toFixed(0)}µV)`
+    diagnoses.push({
+      name: 'Enfarte Agudo do Miocárdio com Supra ST (STEMI)',
+      severity: 'critical',
+      description: `⚠️ INFARTO AGUDO DO MIOCÁRDIO detectado! Supradesnivelamento do segmento ST (${stMag}). Este padrão é indicativo de lesão miocárdica transmural em evolução. Emergência médica absoluta.`,
+      recommendation: 'EMERGÊNCIA ABSOLUTA: Ativar via verde coronária imediatamente. AAS 300mg + clopidogrel 300mg + heparina não fracionada. Avaliar angioplastia primária (meta < 90min) ou trombólise (meta < 30min). Monitorização contínua em UTI.'
+    })
+  }
+
+  if (hasStDepression && !hasStElevation) {
+    const stMag = `${(stMagnitude * 10).toFixed(1)}mm (${(stMagnitude * 1000).toFixed(0)}µV)`
+    diagnoses.push({
+      name: 'Enfarte Agudo do Miocárdio sem Supra ST (NSTEMI) / Isquemia',
+      severity: 'critical',
+      description: `Infradesnivelamento do segmento ST (${stMag}) detectado — síndrome coronária aguda sem supra de ST (SCASSST). Indica isquemia miocárdica subendocárdica. Alto risco de evolução para IAM.`,
+      recommendation: 'URGÊNCIA: Troponina seriada (0h, 3h, 6h). ECG seriado. AAS 300mg + anticoagulação (enoxaparina 1mg/kg 12/12h ou heparina). Avaliar angiografia coronária nas próximas 24-48h (estratificação GRACE/TIMI). Ecocardiograma para função ventricular.'
+    })
+  }
+
+  return { diagnoses, stSegmentIndices }
 }
 
 function analyzeHyperkalemia(data, qrsWidth, prInterval, bpm) {
