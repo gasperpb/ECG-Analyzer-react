@@ -157,3 +157,59 @@ export const LEAD_COLORS = {
   V1: '#e67e22', V2: '#2c3e50', V3: '#d35400',
   V4: '#27ae60', V5: '#2980b9', V6: '#8e44ad'
 }
+
+// Mapeamento de locais de infarto por derivações afetadas
+export const INFARCT_LOCATIONS = {
+  'Anterior Extenso': {
+    leads: ['V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'I', 'aVL'],
+    description: 'Oclusão do tronco da coronária esquerda ou DA proximal',
+    artery: 'Tronco CE / DA proximal'
+  },
+  'Ântero-Septal': {
+    leads: ['V1', 'V2', 'V3', 'V4'],
+    description: 'Oclusão da artéria descendente anterior (DA)',
+    artery: 'DA (Descendente Anterior)'
+  },
+  'Ântero-Lateral': {
+    leads: ['V3', 'V4', 'V5', 'V6', 'I', 'aVL'],
+    description: 'Oclusão da DA ou circunflexa (Cx)',
+    artery: 'DA / Cx (Circunflexa)'
+  },
+  'Inferior': {
+    leads: ['II', 'III', 'aVF'],
+    description: 'Oclusão da artéria coronária direita (CD) ou circunflexa (Cx)',
+    artery: 'CD (Coronária Direita) / Cx'
+  },
+  'Infero-Lateral': {
+    leads: ['II', 'III', 'aVF', 'V5', 'V6', 'I', 'aVL'],
+    description: 'Oclusão da CD ou Cx com extensão lateral',
+    artery: 'CD / Cx'
+  },
+  'Lateral Alto': {
+    leads: ['I', 'aVL'],
+    description: 'Oclusão do ramo diagonal da DA ou marginal da Cx',
+    artery: 'Diagonal / Marginal'
+  },
+  'Lateral': {
+    leads: ['V5', 'V6', 'I', 'aVL'],
+    description: 'Oclusão da artéria circunflexa (Cx)',
+    artery: 'Cx (Circunflexa)'
+  },
+  'Septal': {
+    leads: ['V1', 'V2'],
+    description: 'Oclusão do ramo septal da DA',
+    artery: 'Ramo Septal da DA'
+  },
+  'Posterior (recíproco)': {
+    leads: ['V1', 'V2', 'V3'],
+    description: 'Oclusão da CD ou Cx — alterações recíprocas em V1-V3',
+    artery: 'CD / Cx'
+  }
+}
+
+// Padrões de alteração ST por derivação (para diagnóstico diferencial)
+export const ST_PATTERNS = {
+  SUPRA: 'elevation',
+  INFRA: 'depression',
+  NORMAL: 'normal'
+}
