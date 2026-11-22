@@ -62,10 +62,16 @@ export default function Analyzer({ onAnalysisComplete }) {
       .then((data) => {
         if (!cancelled && Array.isArray(data?.records) && data.records.length > 0) {
           setMitDbRecords(data.records)
+        } else {
+          setMitDbRecords([])
+          setError('Nenhum registro do MIT-BIH encontrado. Certifique-se de que o backend Python está rodando em http://localhost:8000')
         }
       })
       .catch(() => {
-        if (!cancelled) setMitDbRecords([])
+        if (!cancelled) {
+          setMitDbRecords([])
+          setError('Erro ao carregar registros do MIT-BIH. Verifique se o backend está rodando.')
+        }
       })
     return () => { cancelled = true }
   }, [])
@@ -399,11 +405,26 @@ export default function Analyzer({ onAnalysisComplete }) {
       </div>
 
       {/* Banco MIT-BIH Arrhythmia Database */}
+      {mitDbRecords.length === 0 && !error?.includes('MIT-BIH') && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 mb-4">
+          <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+            💡 <strong>MIT-BIH não disponível</strong> - Para usar o banco MIT-BIH, inicie o backend Python:
+          </p>
+          <p className="text-yellow-700 dark:text-yellow-100 text-xs mt-1">
+            `cd backend-python && uvicorn src.api:app --port 8000`
+          </p>
+        </div>
+      )}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">🧬 MIT-BIH Arrhythmia Database</h3>
         <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
           Registros do banco MIT-BIH (PhysioNet) - ECG real da base de arritmias
         </p>
+        {mitDbRecords.length === 0 && error && (
+          <p className="text-red-600 dark:text-red-400 text-sm mb-4">
+            ❌ {error}
+          </p>
+        )}
         <div className="flex flex-col sm:flex-row gap-3">
           <select
             value={mitDbRecordName}

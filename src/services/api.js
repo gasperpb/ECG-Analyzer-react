@@ -74,6 +74,21 @@ export const ecgService = {
   }
 }
 
+// Serviço do banco MIT-BIH Arrhythmia Database (delegado ao backend Node)
+export const mitDbService = {
+  // Lista os registros disponíveis no banco MIT-BIH
+  getRecords: async () => {
+    const response = await api.get('/ecg/mitdb/records')
+    return response.data
+  },
+
+  // Retorna o sinal bruto de um registro do banco MIT-BIH
+  getRecord: async (recordName) => {
+    const response = await api.get(`/ecg/mitdb/record/${recordName}`)
+    return response.data
+  }
+}
+
 // Função para gerar dados ECG simulados
 export const generateSimulatedECG = () => {
   const samplingRate = 250 // Hz
