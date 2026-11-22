@@ -1,8 +1,14 @@
-import { Activity, Zap, BarChart3, Heart, TrendingUp, Image, FlaskConical, Microscope, ShieldAlert } from 'lucide-react'
+import React, { useState } from 'react'
+import { Activity, Zap, BarChart3, Heart, TrendingUp, Image, FlaskConical, Microscope, ShieldAlert, Loader2 } from 'lucide-react'
 import StatsCard from '../components/StatsCard'
+import ECGChart from '../components/ECGChart'
 
 export default function Dashboard({ onNavigate }) {
-  const features = [
+  const [showComparison, setShowComparison] = useState(false)
+const [normalEcgData, setNormalEcgData] = useState(null)
+const [infarctionEcgData, setInfarctionEcgData] = useState(null)
+
+const features = [
     {
       icon: Activity,
       title: 'Análise em Tempo Real',
@@ -350,8 +356,60 @@ export default function Dashboard({ onNavigate }) {
           >
             🎲 Dados Simulados
           </button>
+          <button
+            onClick={() => {
+              const sr = 250
+              const dp = 250 * 10
+              // ECG Normal (senoide basal)
+              const normalData = []
+              for (let i = 0; i < dp; i++) {
+                const t = i / sr
+                normalData.push(0.1 + Math.sin(2 * Math.PI * (72 / 60) * t) * 0.3 * Math.exp(-Math.abs(Math.sin(2 * Math.PI * 5 * (t % 0.2))) * 0.1))
+              }
+              // ECG Infarto (senoide com ST elevation simulado)
+              const infarctionData = []
+              for (let i = 0; i < dp; i++) {
+                const t = i / sr
+                const base = 0.1 + Math.sin(2 * Math.PI * (72 / 60) * t) * 0.3 * Math.exp(-Math.abs(Math.sin(2 * Math.PI * 5 * (t % 0.2))) * 0.1)
+                // Add ST elevation in certain samples (simulated)
+                const stElevation = i > dp / 2 && i < dp * 3 / 4 ? 0.2 * Math.sin(2 * Math.PI * (i - dp / 2) / (dp / 4)) : 0
+                infarctionData.push(base + stElevation)
+              }
+              setNormalEcgData({ data: normalData, samplingRate: sr })
+              setInfarctionEcgData({ data: infarctionData, samplingRate: sr })
+              setShowComparison(true)
+            }}
+            className="bg-medical-600 hover:bg-medical-700 text-white font-bold py-4 px-6 rounded-lg transition-all shadow-md hover:shadow-lg mr-4"
+          >
+            📈 Comparar ECG Normal vs Infarto
+          </button>
         </div>
       </div>
+
+      {/* Comparação de ECG */}
+      {showComparison && (
+        <div className="mt-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">📊 Comparação de ECGs</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ECGChart
+              data={normalEcgData?.data}
+              title="ECG Normal (Sinusal)"
+              samplingRate={normalEcgData?.samplingRate || 250}
+            />
+            <ECGChart
+              data={infarctionEcgData?.data}
+              title="ECG com Infarto (ST Elevation)"
+              samplingRate={infarctionEcgData?.samplingRate || 250}
+            />
+          </div>
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <p className="text-blue-900 dark:text-blue-100 font-medium">ECG Normal:</p>
+            <p className="text-blue-800 dark:text-blue-200 text-sm">Ritmo sinusal, BPM ~72, QRS normal, ST segment isóseo</p>
+            <p className="text-blue-900 dark:text-blue-100 font-medium mt-2">ECG Infarto:</p>
+            <p className="text-blue-800 dark:text-blue-200 text-sm mt-1">Ritmo sinusal com supradesnivelamento ST, BPM ~78, QRS ligeramente amplio, elevación del segmento ST</p>
+          </div>
+        </div>
+      )}
 
       {/* Info Section */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-800 rounded-lg p-6">
