@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Zap, RefreshCw, Image } from 'lucide-react'
 import FileUpload from '../components/FileUpload'
 import ImagePreview from '../components/ImagePreview'
@@ -8,7 +8,7 @@ import ECG12LeadChart from '../components/ECG12LeadChart'
 import Loading from '../components/Loading'
 import VitalSignsInput from '../components/VitalSignsInput'
 import ECGFeaturesInput from '../components/ECGFeaturesInput'
-import { ecgService, generateSimulatedECG, extractECGFromImage, extract12LeadECGFromImage } from '../services/api'
+import { ecgService, generateSimulatedECG, extractECGFromImage, extract12LeadECGFromImage, mitDbService } from '../services/api'
 import { analyzeDiagnosis } from '../services/diagnosticEngine'
 import diagnosticEngine from '../services/diagnosticEngine'
 const { analyzeIschemia } = diagnosticEngine
@@ -52,6 +52,23 @@ export default function Analyzer({ onAnalysisComplete }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [analysisMethod, setAnalysisMethod] = useState(null) // 'file', 'simulated'
+  const [mitDbRecords, setMitDbRecords] = useState([])
+  const [mitDbRecordName, setMitDbRecordName] = useState('100')
+
+  // Carrega os registros disponíveis do banco MIT-BIH (PhysioNet) ao montar a página
+  useEffect(() => {
+    let cancelled = false
+    mitDbService.getRecords()
+      .then((data) => {
+        if (!cancelled && Array.isArray(data?.records) && data.records.length > 0) {
+          setMitDbRecords(data.records)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMitDbRecords([])
+      })
+    return () => { cancelled = true }
+  }, [])
 
   const handleFileSelect = async (file) => {
     setSelectedFile(file)
@@ -178,8 +195,9 @@ export default function Analyzer({ onAnalysisComplete }) {
     }
   }
 
-  const handleAnalyze = async () => {
-    if (!ecgData) {
+  const handleAnalyze = async (ecgDataOverride = null) => {
+    const ecg = ecgDataOverride || ecgData
+    if (!ecg) {
       setError('Nenhum dado de ECG disponível')
       return
     }
@@ -189,23 +207,23 @@ export default function Analyzer({ onAnalysisComplete }) {
 
     try {
       // Validar dados
-      if (ecgData.is12Lead) {
-        if (!ecgData.leads || Object.keys(ecgData.leads).length === 0) {
+      if (ecg.is12Lead) {
+        if (!ecg.leads || Object.keys(ecg.leads).length === 0) {
           throw new Error('Dados de ECG (12 derivações) vazios ou inválidos')
         }
-      } else if (!ecgData.data || ecgData.data.length === 0) {
+      } else if (!ecg.data || ecg.data.length === 0) {
         throw new Error('Dados de ECG vazios ou inválidos')
       }
 
-      const primaryData = ecgData.data && ecgData.data.length > 200
-        ? ecgData.data
-        : (ecgData.is12Lead
-          ? (ecgData.leads.I || ecgData.leads[Object.keys(ecgData.leads)[0]] || [])
-          : ecgData.data || [])
+      const primaryData = ecg.data && ecg.data.length > 200
+        ? ecg.data
+        : (ecg.is12Lead
+          ? (ecg.leads.I || ecg.leads[Object.keys(ecg.leads)[0]] || [])
+          : ecg.data || [])
 
       const analysisPayload = {
-        samplingRate: ecgData.samplingRate || 250,
-        duration: ecgData.duration || primaryData.length / 250,
+        samplingRate: ecg.samplingRate || 250,
+        duration: ecg.duration || primaryData.length / 250,
         data: primaryData,
         vitalSigns: vitalSigns,
         ecgFeatures: ecgFeatures
@@ -220,12 +238,12 @@ export default function Analyzer({ onAnalysisComplete }) {
         console.log('Resposta do backend:', results)
         
         // Adiciona informações do gráfico aos resultados
-        results.ecgChart = ecgData
-        results.source = ecgData.source || 'Dados do Usuário'
+        results.ecgChart = ecg
+        results.source = ecg.source || 'Dados do Usuário'
         results.vitalSignsIncluded = Object.keys(vitalSigns).length > 0
-        if (ecgData.is12Lead) {
+        if (ecg.is12Lead) {
           results.is12Lead = true
-          results.leads = ecgData.leads
+          results.leads = ecg.leads
         }
 
         // Rodar análise de isquemia local (frontend) independente do backend
@@ -270,6 +288,32 @@ export default function Analyzer({ onAnalysisComplete }) {
     } catch (err) {
       console.error('Erro na análise:', err)
       setError(err.message || 'Erro ao analisar ECG. Verifique o console para mais detalhes.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Analisar registro do banco MIT-BIH (PhysioNet)
+  const handleAnalyzeMitDb = async () => {
+    setError('')
+    setLoading(true)
+    try {
+      const record = await mitDbService.getRecord(mitDbRecordName)
+      if (!record || !record.data || record.data.length === 0) {
+        throw new Error(`Registro "${mitDbRecordName}" não encontrado no banco MIT-BIH`)
+      }
+      const mitDbData = {
+        data: record.data,
+        samplingRate: record.sampling_rate || 250,
+        duration: record.duration || record.data.length / 250,
+        source: record.source || `MIT-BIH Arrhythmia Database - registro ${record.record || mitDbRecordName}`
+      }
+      setEcgData(mitDbData)
+      // Executar a análise completa (motor + IA) sobre o registro do MIT-BIH
+      await handleAnalyze(mitDbData)
+    } catch (err) {
+      console.error('Erro ao analisar registro do MIT-BIH:', err)
+      setError(`Erro ao analisar registro do MIT-BIH: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -345,12 +389,43 @@ export default function Analyzer({ onAnalysisComplete }) {
             Gerar Dados Simulados
           </button>
           {analysisMethod === 'simulated' && (
-            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-800 rounded-lg">
+            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-gray-800 rounded-lg">
               <p className="text-green-700 dark:text-green-100 text-sm font-medium">
                 ✓ Dados simulados gerados com sucesso!
               </p>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Banco MIT-BIH Arrhythmia Database */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">🧬 MIT-BIH Arrhythmia Database</h3>
+        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+          Registros do banco MIT-BIH (PhysioNet) - ECG real da base de arritmias
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <select
+            value={mitDbRecordName}
+            onChange={(e) => setMitDbRecordName(e.target.value)}
+            disabled={mitDbRecords.length === 0}
+            className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100"
+          >
+            {mitDbRecords.length === 0 ? (
+              <option disabled>Registros do MIT-BIH não disponíveis...</option>
+            ) : (
+              mitDbRecords.map((record) => (
+                <option key={record} value={record}>Registro {record}</option>
+              ))
+            )}
+          </select>
+          <button
+            onClick={handleAnalyzeMitDb}
+            disabled={mitDbRecords.length === 0}
+            className="flex-1 bg-medical-600 hover:bg-medical-700 text-white font-bold py-2 px-4 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Analisar no MIT-BIH
+          </button>
         </div>
       </div>
 
@@ -397,10 +472,15 @@ export default function Analyzer({ onAnalysisComplete }) {
       )}
 
       {/* Error Display */}
-      {error && (
+      {error && error.includes('Backend') && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-lg p-4">
           <p className="text-red-700 dark:text-red-100 font-medium">⚠️ {error}</p>
-          <p className="text-red-600 dark:text-red-400 text-xs mt-2">💡 Dica: Verifique se o backend está rodando em http://localhost:8080</p>
+          <p className="text-red-600 dark:text-red-400 text-xs mt-2">💡 Dica: Inicie o backend Node com `cd backend && npm run dev`</p>
+        </div>
+      )}
+      {error && !error.includes('Backend') && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-lg p-4">
+          <p className="text-red-700 dark:text-red-100 font-medium">⚠️ {error}</p>
         </div>
       )}
 
