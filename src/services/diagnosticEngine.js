@@ -3,14 +3,40 @@
  * Analyzes ECG data along with vital signs for comprehensive diagnosis
  */
 
+import { analyzeSignal } from '../../shared/ecgSignal.js'
+
+const enrichEcgData = (ecgData) => {
+  if (!ecgData) return ecgData
+
+  const rawData = Array.isArray(ecgData) ? ecgData : ecgData.data
+  if (!Array.isArray(rawData) || rawData.length < 200) return ecgData
+
+  const samplingRate = (!Array.isArray(ecgData) && ecgData.samplingRate) || 250
+  const signal = analyzeSignal(rawData, samplingRate)
+  const base = Array.isArray(ecgData) ? { data: ecgData } : ecgData
+
+  return {
+    ...base,
+    bpm: Number.isFinite(base.bpm) ? base.bpm : signal.bpm,
+    rhythm: base.rhythm || signal.rhythm.type,
+    pr: Number.isFinite(base.pr) ? base.pr : signal.pr.interval,
+    qrs: Number.isFinite(base.qrs) ? base.qrs : signal.qrs.width,
+    qt: Number.isFinite(base.qt) ? base.qt : signal.qt.interval,
+    qtc: Number.isFinite(base.qtc) ? base.qtc : signal.qt.qtc,
+    signalAnalysis: signal
+  }
+}
+
 export const analyzeDiagnosis = (ecgData, vitalSigns = {}, ecgFeatures = {}) => {
   const diagnoses = []
   const recommendations = []
   let riskLevel = 'low'
   let overallSeverity = 'normal'
 
+  const enrichedEcg = enrichEcgData(ecgData)
+
   // ECG-based diagnosis
-  const ecgDiagnosis = analyzeECGPatterns(ecgData)
+  const ecgDiagnosis = analyzeECGPatterns(enrichedEcg)
   diagnoses.push(...ecgDiagnosis.diagnoses)
   recommendations.push(...ecgDiagnosis.recommendations)
   if (ecgDiagnosis.riskLevel === 'high') riskLevel = 'high'
@@ -18,7 +44,7 @@ export const analyzeDiagnosis = (ecgData, vitalSigns = {}, ecgFeatures = {}) => 
   else if (ecgDiagnosis.severity === 'warning' && overallSeverity !== 'critical') overallSeverity = 'warning'
 
   // Ischemia / infarction analysis from raw waveform or features
-  const ischemiaDiagnosis = analyzeIschemia(ecgData, ecgFeatures)
+  const ischemiaDiagnosis = analyzeIschemia(enrichedEcg, ecgFeatures)
   diagnoses.push(...ischemiaDiagnosis.diagnoses)
   recommendations.push(...ischemiaDiagnosis.recommendations)
   if (ischemiaDiagnosis.riskLevel === 'high') riskLevel = 'high'
@@ -36,7 +62,7 @@ export const analyzeDiagnosis = (ecgData, vitalSigns = {}, ecgFeatures = {}) => 
   }
 
   // Combined analysis
-  const combinedDiagnosis = analyzeCombinedConditions(ecgData, vitalSigns)
+  const combinedDiagnosis = analyzeCombinedConditions(enrichedEcg, vitalSigns)
   diagnoses.push(...combinedDiagnosis.diagnoses)
   recommendations.push(...combinedDiagnosis.recommendations)
 
@@ -70,14 +96,16 @@ const analyzeECGPatterns = (ecgData) => {
   let riskLevel = 'low'
   let severity = 'normal'
 
-  const bpm = ecgData.bpm || 72
-  const rhythm = ecgData.rhythm || 'Sinusal Normal'
-  const pr = ecgData.pr || 160
-  const qrs = ecgData.qrs || 80
-  const qt = ecgData.qt || 400
+  const bpm = Number.isFinite(ecgData.bpm) ? ecgData.bpm : null
+  const rhythm = ecgData.rhythm || 'Indeterminado'
+  const pr = Number.isFinite(ecgData.pr) ? ecgData.pr : null
+  const qrs = Number.isFinite(ecgData.qrs) ? ecgData.qrs : null
+  const qt = Number.isFinite(ecgData.qt) ? ecgData.qt : null
+  const qtc = Number.isFinite(ecgData.qtc) ? ecgData.qtc : null
+  const correctedQT = qtc != null ? qtc : qt
 
   // Heart rate analysis
-  if (bpm < 60) {
+  if (bpm != null && bpm < 60) {
     diagnoses.push({
       name: 'Bradicardia',
       severity: bpm < 40 ? 'critical' : 'warning',
@@ -91,7 +119,7 @@ const analyzeECGPatterns = (ecgData) => {
     })
     riskLevel = 'high'
     severity = bpm < 40 ? 'critical' : 'warning'
-  } else if (bpm > 100) {
+  } else if (bpm != null && bpm > 100) {
     diagnoses.push({
       name: 'Taquicardia',
       severity: bpm > 120 ? 'warning' : 'attention',
@@ -109,14 +137,18 @@ const analyzeECGPatterns = (ecgData) => {
     }
   }
 
-  // Rhythm analysis
-  if (rhythm !== 'Sinusal Normal') {
+  // Rhythm analysis (rate labels are already handled by the heart-rate block)
+  const rhythmIsRateLabel =
+    rhythm === 'Ritmo Bradicárdico' || rhythm === 'Ritmo Taquicárdico'
+
+  if (!rhythmIsRateLabel && rhythm !== 'Sinusal Normal' && rhythm !== 'Indeterminado') {
     const rhythmSeverity = {
       'Fibrilação Atrial': 'warning',
       'Flutter Atrial': 'warning',
       'Taquicardia Supraventricular': 'attention',
       'Bloqueio AV': 'critical',
-      'Extrassístoles': 'attention'
+      'Extrassístoles': 'attention',
+      'Ritmo Irregular': 'warning'
     }
 
     diagnoses.push({
@@ -125,7 +157,7 @@ const analyzeECGPatterns = (ecgData) => {
       description: `Padrão de ritmo anômalo detectado: ${rhythm}`,
       details: {
         'Ritmo': rhythm,
-        'Frequência': `${bpm} BPM`
+        'Frequência': bpm != null ? `${bpm} BPM` : 'N/A'
       },
       recommendation: 'Avaliação cardiológica especializada recomendada',
       commonCauses: ['Doença cardíaca', 'Hipertensão', 'Hipertireoidismo', 'Idade avançada']
@@ -135,36 +167,36 @@ const analyzeECGPatterns = (ecgData) => {
   }
 
   // Interval analysis
-  if (pr > 200) {
+  if (pr != null && pr > 200) {
     diagnoses.push({
       name: 'Intervalo PR Prolongado',
       severity: 'warning',
-      description: `Intervalo PR aumentado: ${pr}ms (normal: 120-200ms)`,
-      details: { 'Intervalo PR': `${pr}ms` },
+      description: `Intervalo PR aumentado: ${Math.round(pr)}ms (normal: 120-200ms)`,
+      details: { 'Intervalo PR': `${Math.round(pr)}ms` },
       recommendation: 'Pode indicar bloqueio AV. Avaliar com cardiologista.',
       commonCauses: ['Bloqueio AV de primeiro grau', 'Hipercalemia', 'Doença cardíaca']
     })
     riskLevel = 'high'
   }
 
-  if (qrs > 120) {
+  if (qrs != null && qrs > 120) {
     diagnoses.push({
       name: 'QRS Alargado',
       severity: 'warning',
-      description: `Complexo QRS alargado: ${qrs}ms (normal: 80-120ms)`,
-      details: { 'Complexo QRS': `${qrs}ms` },
+      description: `Complexo QRS alargado: ${Math.round(qrs)}ms (normal: 80-120ms)`,
+      details: { 'Complexo QRS': `${Math.round(qrs)}ms` },
       recommendation: 'Pode indicar bloqueio de ramo. Referência a cardiologista.',
       commonCauses: ['Bloqueio de ramo', 'Hipertrofia ventricular', 'Taquicardia supraventricular']
     })
     riskLevel = 'high'
   }
 
-  if (qt > 480) {
+  if (correctedQT != null && correctedQT > 480) {
     diagnoses.push({
       name: 'Intervalo QT Prolongado',
       severity: 'warning',
-      description: `Intervalo QT aumentado: ${qt}ms. Risco de arritmias.`,
-      details: { 'Intervalo QT': `${qt}ms` },
+      description: `Intervalo QTc aumentado: ${Math.round(correctedQT)}ms. Risco de arritmias.`,
+      details: { 'Intervalo QTc': `${Math.round(correctedQT)}ms` },
       recommendation: 'Risco de Torsades de Pointes. Avaliar medicamentos.',
       commonCauses: ['Congênito', 'Medicamentos', 'Hipocalemia', 'Hipomagnesia']
     })
@@ -172,18 +204,36 @@ const analyzeECGPatterns = (ecgData) => {
     severity = 'warning'
   }
 
-  if (diagnoses.length === 0 || (rhythm === 'Sinusal Normal' && bpm >= 60 && bpm <= 100)) {
-    diagnoses.push({
-      name: 'Ritmo Sinusal Normal',
-      severity: 'normal',
-      description: 'ECG dentro dos parâmetros normais',
-      details: {
-        'Frequência': `${bpm} BPM`,
-        'Ritmo': 'Sinusal Normal',
-        'Intervalos': 'Normais'
-      },
-      recommendation: 'Continuar com acompanhamento regular'
-    })
+  if (diagnoses.length === 0) {
+    const intervalsNormal =
+      (pr == null || pr <= 200) &&
+      (qrs == null || qrs <= 120) &&
+      (correctedQT == null || correctedQT <= 480)
+
+    if (bpm != null && rhythm === 'Sinusal Normal' && bpm >= 60 && bpm <= 100 && intervalsNormal) {
+      diagnoses.push({
+        name: 'Ritmo Sinusal Normal',
+        severity: 'normal',
+        description: 'ECG dentro dos parâmetros normais',
+        details: {
+          'Frequência': `${bpm} BPM`,
+          'Ritmo': 'Sinusal Normal',
+          'Intervalos': 'Normais'
+        },
+        recommendation: 'Continuar com acompanhamento regular'
+      })
+    } else {
+      diagnoses.push({
+        name: 'Análise Inconclusiva',
+        severity: 'info',
+        description: 'Sinal insuficiente ou de baixa qualidade para caracterizar o ritmo com segurança.',
+        details: {
+          'Batimentos detectados': `${ecgData.signalAnalysis?.rPeaks?.length ?? 0}`
+        },
+        recommendation: 'Repetir o exame com melhor qualidade de sinal ou fornecer ECG de 12 derivações.',
+        commonCauses: ['Ruído no sinal', 'Derivação de baixa amplitude', 'Duração insuficiente']
+      })
+    }
   }
 
   recommendations.push('Acompanhamento regular com cardiologista')
@@ -401,108 +451,37 @@ const analyzeIschemia = (ecgData, ecgFeatures = {}) => {
     ecgFeatures.tallTWaves === 'true'
 
   // Detect ST changes from raw waveform if available
-  const rawData = Array.isArray(ecgData) ? ecgData : (ecgData.data || null)
+  const rawData = Array.isArray(ecgData) ? ecgData : (ecgData?.data || null)
+  const samplingRate = (!Array.isArray(ecgData) && ecgData?.samplingRate) || 250
   let detectedStElevation = null
   let detectedStDepression = null
   let detectedTInversion = null
 
-  if (rawData && rawData.length > 200) {
-    const samplingRate = ecgData.samplingRate || 250
-    const windowSize = Math.floor(samplingRate * 0.4)
-    const stepSize = Math.floor(windowSize * 0.3)
+  const precomputed = !Array.isArray(ecgData) ? ecgData?.signalAnalysis : null
+  const signal = precomputed || (rawData && rawData.length > 200
+    ? analyzeSignal(rawData, samplingRate)
+    : null)
 
-    // Compute global baseline (isoelectric level) from the whole signal
-    const sorted = [...rawData].sort((a, b) => a - b)
-    const middleSegment = sorted.slice(Math.floor(sorted.length * 0.2), Math.floor(sorted.length * 0.8))
-    const baseline = middleSegment.length > 0
-      ? middleSegment.reduce((a, b) => a + b, 0) / middleSegment.length
-      : 0
-
-    for (let i = 0; i < rawData.length - windowSize; i += stepSize) {
-      const window = rawData.slice(i, i + windowSize)
-
-      // Find R peak (max absolute deviation from baseline)
-      let maxDev = 0
-      let rIdx = 0
-      for (let j = 0; j < window.length; j++) {
-        const dev = Math.abs(window[j] - baseline)
-        if (dev > maxDev) {
-          maxDev = dev
-          rIdx = j
-        }
-      }
-
-      // R peak must be significant (> 0.15mV) to be a real QRS
-      if (maxDev < 0.15) continue
-
-      // QRS end: ~60-80ms after R peak
-      const qrsEnd = rIdx + Math.floor(0.065 * samplingRate)
-      const stStart = qrsEnd
-      const stEnd = stStart + Math.floor(0.08 * samplingRate)
-
-      if (stEnd >= window.length) continue
-
-      // Measure ST segment deviation from baseline (in mV)
-      const stValues = []
-      for (let j = stStart; j < stEnd; j++) {
-        stValues.push(window[j] - baseline)
-      }
-      const stDev = stValues.reduce((a, b) => a + b, 0) / stValues.length
-
-      // ST elevation threshold: > 0.1mV (1mm) = significant
-      if (stDev > 0.10) {
-        if (!detectedStElevation || Math.abs(stDev) > Math.abs(detectedStElevation.magnitude)) {
-          detectedStElevation = {
-            confidence: Math.min(95, 70 + stDev * 150),
-            magnitude: stDev,
-            position: i + stStart
-          }
-        }
-        stSegmentIndices.push({ start: i + stStart, end: i + stEnd, type: 'elevation' })
-      }
-
-      // ST depression threshold: < -0.05mV
-      if (stDev < -0.05) {
-        if (!detectedStDepression || Math.abs(stDev) > Math.abs(detectedStDepression.magnitude)) {
-          detectedStDepression = {
-            confidence: Math.min(85, 65 + Math.abs(stDev) * 150),
-            magnitude: Math.abs(stDev),
-            position: i + stStart
-          }
-        }
-        stSegmentIndices.push({ start: i + stStart, end: i + stEnd, type: 'depression' })
-      }
-
-      // T wave inversion: look at T wave region (200-400ms after R peak)
-      const tStart = rIdx + Math.floor(0.2 * samplingRate)
-      const tEnd = Math.min(rIdx + Math.floor(0.42 * samplingRate), window.length)
-      if (tStart < tEnd) {
-        const tRegion = window.slice(tStart, tEnd)
-        const tMin = Math.min(...tRegion)
-        const tMax = Math.max(...tRegion)
-        const tPeakIdx = tRegion.indexOf(tMax)
-        const tDeviation = tRegion[tPeakIdx] - baseline
-
-        if (tDeviation < -0.1 && maxDev > 0.2) {
-          detectedTInversion = { confidence: 75 }
-        }
+  if (signal && signal.rPeaks.length >= 2) {
+    const st = signal.st
+    if (st.elevation) {
+      detectedStElevation = {
+        confidence: Math.min(95, 70 + st.maxElevation * 150),
+        magnitude: st.maxElevation,
+        position: st.elevationPosition
       }
     }
-  }
-
-  // Merge overlapping zones
-  if (stSegmentIndices.length > 1) {
-    stSegmentIndices.sort((a, b) => a.start - b.start)
-    const merged = [stSegmentIndices[0]]
-    for (let k = 1; k < stSegmentIndices.length; k++) {
-      const last = merged[merged.length - 1]
-      if (stSegmentIndices[k].start <= last.end && stSegmentIndices[k].type === last.type) {
-        last.end = Math.max(last.end, stSegmentIndices[k].end)
-      } else {
-        merged.push(stSegmentIndices[k])
+    if (st.depression) {
+      detectedStDepression = {
+        confidence: Math.min(85, 65 + st.maxDepression * 150),
+        magnitude: st.maxDepression,
+        position: st.depressionPosition
       }
     }
-    stSegmentIndices = merged
+    if (st.tWaveInversion) {
+      detectedTInversion = { confidence: 75 }
+    }
+    stSegmentIndices = st.segmentIndices || []
   }
 
   const hasSTE = hasStElevation || detectedStElevation !== null
@@ -515,7 +494,7 @@ const analyzeIschemia = (ecgData, ecgFeatures = {}) => {
       ? `${(detectedStElevation.magnitude * 10).toFixed(1)}mm (${(detectedStElevation.magnitude * 1000).toFixed(0)}µV)`
       : 'Elevado'
     const stPos = detectedStElevation?.position
-      ? `aproximadamente ${(detectedStElevation.position / 250).toFixed(1)}s`
+      ? `aproximadamente ${(detectedStElevation.position / samplingRate).toFixed(1)}s`
       : ''
 
     diagnoses.push({

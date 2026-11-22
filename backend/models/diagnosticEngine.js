@@ -3,9 +3,15 @@
  * Análise avançada com correlações multissistêmicas
  */
 
-export function analyzeECG(data) {
+import { analyzeSignal, median, medianRange } from '../../shared/ecgSignal.js'
+
+export function analyzeECG(data, options = {}) {
   const diagnoses = []
   const ecgData = Array.isArray(data) ? data : data.data || []
+  const samplingRate =
+    options.samplingRate ||
+    (!Array.isArray(data) && data.samplingRate) ||
+    250
 
   if (ecgData.length === 0) {
     return {
@@ -22,15 +28,17 @@ export function analyzeECG(data) {
     }
   }
 
-  // Análise básica de ECG
-  const bpm = calculateBPM(ecgData)
-  const rhythm = analyzeRhythm(ecgData, bpm)
-  const qrsWidth = analyzeQRS(ecgData)
-  const qtInterval = analyzeQT(ecgData)
-  const prInterval = analyzePR(ecgData)
+  // Análise robusta do sinal (filtros, picos R, intervalos e ST)
+  const signal = analyzeSignal(ecgData, samplingRate)
+  const bpm = signal.bpm
+  const rhythm = signal.rhythm.type
+  const qrsWidth = signal.qrs.width
+  const qtInterval = signal.qt.interval
+  const qtcInterval = signal.qt.qtc
+  const prInterval = signal.pr.interval
 
   // Diagnósticos baseados em ECG
-  if (bpm < 60) {
+  if (bpm != null && bpm < 60) {
     diagnoses.push({
       name: 'Bradicardia',
       severity: bpm < 40 ? 'critical' : 'warning',
@@ -39,7 +47,7 @@ export function analyzeECG(data) {
     })
   }
 
-  if (bpm > 100) {
+  if (bpm != null && bpm > 100) {
     diagnoses.push({
       name: 'Taquicardia',
       severity: bpm > 150 ? 'critical' : 'warning',
@@ -48,7 +56,8 @@ export function analyzeECG(data) {
     })
   }
 
-  if (rhythm !== 'Sinusal Normal') {
+  const rhythmIsRateLabel = rhythm === 'Ritmo Bradicárdico' || rhythm === 'Ritmo Taquicárdico'
+  if (!rhythmIsRateLabel && rhythm !== 'Sinusal Normal' && rhythm !== 'Indeterminado') {
     diagnoses.push({
       name: rhythm,
       severity: rhythm.includes('Fibrilação') ? 'critical' : 'warning',
@@ -57,35 +66,36 @@ export function analyzeECG(data) {
     })
   }
 
-  if (qrsWidth > 120) {
+  if (qrsWidth != null && qrsWidth > 120) {
     diagnoses.push({
       name: 'Complexo QRS Alargado',
       severity: 'warning',
-      description: `QRS > 120ms (${qrsWidth}ms)`,
+      description: `QRS > 120ms (${Math.round(qrsWidth)}ms)`,
       recommendation: 'Avaliar bloqueio de ramo ou ritmo ventricular'
     })
   }
 
-  if (qtInterval > 480) {
+  const correctedQT = qtcInterval != null ? qtcInterval : qtInterval
+  if (correctedQT != null && correctedQT > 480) {
     diagnoses.push({
       name: 'QT Prolongado',
       severity: 'warning',
-      description: `Intervalo QT prolongado: ${qtInterval}ms`,
+      description: `Intervalo QTc prolongado: ${Math.round(correctedQT)}ms`,
       recommendation: 'Avaliar medicações e eletrólitos'
     })
   }
 
-  if (prInterval > 200) {
+  if (prInterval != null && prInterval > 200) {
     diagnoses.push({
       name: 'PR Prolongado',
       severity: 'info',
-      description: `Intervalo PR > 200ms (${prInterval}ms)`,
+      description: `Intervalo PR > 200ms (${Math.round(prInterval)}ms)`,
       recommendation: 'Monitorar bloqueio AV de primeiro grau'
     })
   }
 
   // Análise de Hipercalémia (sinais no ECG)
-  const hyperkalemiaAnalysis = analyzeHyperkalemia(ecgData, qrsWidth, prInterval, bpm)
+  const hyperkalemiaAnalysis = analyzeHyperkalemia(signal, qrsWidth, prInterval)
   if (hyperkalemiaAnalysis.detected) {
     diagnoses.push({
       name: 'Possível Hipercalémia',
@@ -96,17 +106,26 @@ export function analyzeECG(data) {
   }
 
   // Análise de isquemia/infarto
-  const ischemiaAnalysis = analyzeIschemia(ecgData)
+  const ischemiaAnalysis = analyzeIschemia(signal)
   diagnoses.push(...ischemiaAnalysis.diagnoses)
 
   // Se nenhum diagnóstico foi encontrado
   if (diagnoses.length === 0) {
-    diagnoses.push({
-      name: 'Ritmo Sinusal Normal',
-      severity: 'normal',
-      description: 'ECG dentro dos parâmetros normais',
-      recommendation: 'Continuar com acompanhamento regular'
-    })
+    if (signal.quality.reliable) {
+      diagnoses.push({
+        name: 'Ritmo Sinusal Normal',
+        severity: 'normal',
+        description: 'ECG dentro dos parâmetros normais',
+        recommendation: 'Continuar com acompanhamento regular'
+      })
+    } else {
+      diagnoses.push({
+        name: 'Análise Inconclusiva',
+        severity: 'info',
+        description: 'Sinal insuficiente ou de baixa qualidade para caracterizar o ritmo com segurança.',
+        recommendation: 'Repetir o exame com melhor qualidade de sinal ou fornecer ECG de 12 derivações.'
+      })
+    }
   }
 
   return {
@@ -115,7 +134,9 @@ export function analyzeECG(data) {
     rhythm,
     qrsWidth,
     qtInterval,
+    qtcInterval,
     prInterval,
+    beatCount: signal.rPeaks.length,
     stSegmentIndices: ischemiaAnalysis.stSegmentIndices,
     riskLevel: calculateRiskLevel(diagnoses),
     overallSeverity: calculateSeverity(diagnoses)
@@ -1362,209 +1383,31 @@ export function analyzeECGFeatures(features, ecgAnalysis, vitals) {
 }
 
 // Funções auxiliares
-function calculateBPM(data) {
-  if (data.length < 2) return 72
-  // Simulação simplificada: analisa picos R
-  const peaks = findPeaks(data)
-  if (peaks.length < 2) return 72
-  const avgInterval = (data.length / peaks.length) / 250 // Assumindo 250 Hz
-  return Math.round(60 / avgInterval)
-}
-
-function findPeaks(data) {
-  const peaks = []
-  const threshold = Math.max(...data) * 0.7
-  for (let i = 1; i < data.length - 1; i++) {
-    if (data[i] > threshold && data[i] > data[i - 1] && data[i] > data[i + 1]) {
-      peaks.push(i)
-    }
-  }
-  return peaks
-}
-
-function analyzeRhythm(data, bpm) {
-  // Análise simplificada
-  if (bpm >= 60 && bpm <= 100) return 'Sinusal Normal'
-  if (bpm < 60) return 'Ritmo Bradicárdico'
-  if (bpm > 100) return 'Ritmo Tacicárdico'
-  return 'Ritmo Normal'
-}
-
-function analyzeQRS(data) {
-  // Analisar largura do QRS baseado na detecção de picos
-  const peaks = findPeaks(data)
-  if (peaks.length < 2) return Math.random() * 40 + 80
-
-  const samplingRate = 250
-  const qrsDurations = []
-
-  for (const peak of peaks) {
-    // Encontrar início e fim do QRS (onde o sinal cruza zero ao redor do pico)
-    let start = peak
-    while (start > 0 && Math.abs(data[start]) > 0.05 * Math.abs(data[peak])) {
-      start--
-    }
-    let end = peak
-    while (end < data.length - 1 && Math.abs(data[end]) > 0.05 * Math.abs(data[peak])) {
-      end++
-    }
-
-    const duration = ((end - start) / samplingRate) * 1000 // em ms
-    if (duration > 40 && duration < 200) {
-      qrsDurations.push(duration)
-    }
-  }
-
-  if (qrsDurations.length === 0) return Math.random() * 40 + 80
-  return qrsDurations.reduce((a, b) => a + b, 0) / qrsDurations.length
-}
-
-function analyzeQT(data) {
-  const peaks = findPeaks(data)
-  if (peaks.length < 2) return Math.random() * 80 + 360
-
-  const samplingRate = 250
-  const qtIntervals = []
-
-  for (let i = 0; i < Math.min(peaks.length, 10); i++) {
-    const rPeakIdx = peaks[i]
-    const nextPeakIdx = i < peaks.length - 1 ? peaks[i + 1] : rPeakIdx + samplingRate
-
-    // Encontrar fim da onda T
-    let tEnd = rPeakIdx + Math.floor(0.5 * samplingRate)
-    if (tEnd >= data.length) tEnd = data.length - 1
-
-    // Procurar ponto onde o sinal retorna à linha de base após o pico R
-    for (let j = rPeakIdx + Math.floor(0.15 * samplingRate); j < tEnd; j++) {
-      if (Math.abs(data[j]) < 0.05 * Math.abs(data[rPeakIdx])) {
-        tEnd = j
-        break
-      }
-    }
-
-    const qt = ((tEnd - rPeakIdx) / samplingRate) * 1000
-    if (qt > 200 && qt < 600) {
-      qtIntervals.push(qt)
-    }
-  }
-
-  if (qtIntervals.length === 0) return Math.random() * 80 + 360
-  return qtIntervals.reduce((a, b) => a + b, 0) / qtIntervals.length
-}
-
-function analyzePR(data) {
-  const peaks = findPeaks(data)
-  if (peaks.length < 2) return Math.random() * 60 + 140
-
-  const samplingRate = 250
-  const prIntervals = []
-
-  for (let i = 0; i < Math.min(peaks.length, 10); i++) {
-    const rPeakIdx = peaks[i]
-    // Procurar onda P antes do QRS (100-200ms antes)
-    const pWaveStart = rPeakIdx - Math.floor(0.25 * samplingRate)
-    const pWaveEnd = rPeakIdx - Math.floor(0.05 * samplingRate)
-
-    if (pWaveStart < 0 || pWaveEnd >= data.length) continue
-
-    // Encontrar início da onda P
-    let pStart = pWaveEnd
-    for (let j = pWaveEnd; j > pWaveStart; j--) {
-      if (Math.abs(data[j]) < 0.05 * Math.abs(data[rPeakIdx])) {
-        pStart = j
-        break
-      }
-    }
-
-    const pr = ((rPeakIdx - pStart) / samplingRate) * 1000
-    if (pr > 80 && pr < 300) {
-      prIntervals.push(pr)
-    }
-  }
-
-  if (prIntervals.length === 0) return Math.random() * 60 + 140
-  return prIntervals.reduce((a, b) => a + b, 0) / prIntervals.length
-}
-
-function analyzeIschemia(data) {
-  if (!data || data.length < 250) {
+function analyzeIschemia(signal) {
+  if (!signal || signal.rPeaks.length < 2) {
     return { diagnoses: [], stSegmentIndices: [] }
   }
 
   const diagnoses = []
-  const stSegmentIndices = []
-  const peaks = findPeaks(data)
-  if (peaks.length < 2) return { diagnoses: [], stSegmentIndices: [] }
+  const st = signal.st
+  const stSegmentIndices = st.segmentIndices || []
 
-  // Compute global baseline (isoelectric level)
-  const sorted = [...data].sort((a, b) => a - b)
-  const middleSegment = sorted.slice(Math.floor(sorted.length * 0.2), Math.floor(sorted.length * 0.8))
-  const baseline = middleSegment.length > 0
-    ? middleSegment.reduce((a, b) => a + b, 0) / middleSegment.length
-    : 0
-
-  const samplingRate = 250
-  let hasStElevation = false
-  let hasStDepression = false
-  let stMagnitude = 0
-
-  for (const rIdx of peaks) {
-    if (rIdx + Math.floor(0.14 * samplingRate) >= data.length) continue
-
-    // ST segment: 60ms to 140ms after R peak
-    const stStart = rIdx + Math.floor(0.060 * samplingRate)
-    const stEnd = rIdx + Math.floor(0.140 * samplingRate)
-    if (stEnd >= data.length) continue
-
-    // Measure ST segment deviation from baseline
-    const stValues = []
-    for (let j = stStart; j < stEnd; j++) {
-      stValues.push(data[j] - baseline)
-    }
-    const stDev = stValues.reduce((a, b) => a + b, 0) / stValues.length
-
-    if (stDev > 0.10) {
-      hasStElevation = true
-      stMagnitude = Math.max(stMagnitude, stDev)
-      stSegmentIndices.push({ start: stStart, end: stEnd, type: 'elevation' })
-    } else if (stDev < -0.05) {
-      hasStDepression = true
-      stMagnitude = Math.max(stMagnitude, Math.abs(stDev))
-      stSegmentIndices.push({ start: stStart, end: stEnd, type: 'depression' })
-    }
-  }
-
-  // Merge overlapping zones
-  if (stSegmentIndices.length > 1) {
-    stSegmentIndices.sort((a, b) => a.start - b.start)
-    const merged = [stSegmentIndices[0]]
-    for (let k = 1; k < stSegmentIndices.length; k++) {
-      const last = merged[merged.length - 1]
-      if (stSegmentIndices[k].start <= last.end && stSegmentIndices[k].type === last.type) {
-        last.end = Math.max(last.end, stSegmentIndices[k].end)
-      } else {
-        merged.push(stSegmentIndices[k])
-      }
-    }
-    stSegmentIndices.splice(0, stSegmentIndices.length, ...merged)
-  }
-
-  if (hasStElevation) {
-    const stMag = `${(stMagnitude * 10).toFixed(1)}mm (${(stMagnitude * 1000).toFixed(0)}µV)`
+  if (st.elevation) {
+    const stMag = `${(st.maxElevation * 10).toFixed(1)}mm (${(st.maxElevation * 1000).toFixed(0)}µV)`
     diagnoses.push({
       name: 'Enfarte Agudo do Miocárdio com Supra ST (STEMI)',
       severity: 'critical',
-      description: `⚠️ INFARTO AGUDO DO MIOCÁRDIO detectado! Supradesnivelamento do segmento ST (${stMag}). Este padrão é indicativo de lesão miocárdica transmural em evolução. Emergência médica absoluta.`,
+      description: `⚠️ INFARTO AGUDO DO MIOCÁRDIO detectado! Supradesnivelamento do segmento ST (${stMag}) de forma consistente em múltiplos batimentos. Este padrão é indicativo de lesão miocárdica transmural em evolução. Emergência médica absoluta.`,
       recommendation: 'EMERGÊNCIA ABSOLUTA: Ativar via verde coronária imediatamente. AAS 300mg + clopidogrel 300mg + heparina não fracionada. Avaliar angioplastia primária (meta < 90min) ou trombólise (meta < 30min). Monitorização contínua em UTI.'
     })
   }
 
-  if (hasStDepression && !hasStElevation) {
-    const stMag = `${(stMagnitude * 10).toFixed(1)}mm (${(stMagnitude * 1000).toFixed(0)}µV)`
+  if (st.depression && !st.elevation) {
+    const stMag = `${(st.maxDepression * 10).toFixed(1)}mm (${(st.maxDepression * 1000).toFixed(0)}µV)`
     diagnoses.push({
       name: 'Enfarte Agudo do Miocárdio sem Supra ST (NSTEMI) / Isquemia',
       severity: 'critical',
-      description: `Infradesnivelamento do segmento ST (${stMag}) detectado — síndrome coronária aguda sem supra de ST (SCASSST). Indica isquemia miocárdica subendocárdica. Alto risco de evolução para IAM.`,
+      description: `Infradesnivelamento do segmento ST (${stMag}) detectado de forma consistente — síndrome coronária aguda sem supra de ST (SCASSST). Indica isquemia miocárdica subendocárdica. Alto risco de evolução para IAM.`,
       recommendation: 'URGÊNCIA: Troponina seriada (0h, 3h, 6h). ECG seriado. AAS 300mg + anticoagulação (enoxaparina 1mg/kg 12/12h ou heparina). Avaliar angiografia coronária nas próximas 24-48h (estratificação GRACE/TIMI). Ecocardiograma para função ventricular.'
     })
   }
@@ -1572,97 +1415,66 @@ function analyzeIschemia(data) {
   return { diagnoses, stSegmentIndices }
 }
 
-function analyzeHyperkalemia(data, qrsWidth, prInterval, bpm) {
-  if (!data || data.length < 250) {
-    return { detected: false }
+function analyzeHyperkalemia(signal, qrsWidth, prInterval) {
+  if (!signal || signal.rPeaks.length < 2) return { detected: false }
+
+  const { centered, rPeaks, samplingRate } = signal
+  if (!centered || centered.length === 0) return { detected: false }
+
+  const tRatios = []
+  for (let i = 0; i < rPeaks.length; i++) {
+    const r = rPeaks[i]
+    const nextR = i < rPeaks.length - 1 ? rPeaks[i + 1] : null
+    const baseline = medianRange(
+      centered,
+      r - Math.round(0.08 * samplingRate),
+      r - Math.round(0.04 * samplingRate)
+    )
+    const rAmplitude = Math.abs(centered[r] - baseline)
+    if (rAmplitude < 0.05) continue
+
+    const start = r + Math.round(0.15 * samplingRate)
+    let end = nextR != null
+      ? nextR - Math.round(0.04 * samplingRate)
+      : r + Math.round(0.45 * samplingRate)
+    end = Math.min(centered.length - 1, end)
+    if (end <= start) continue
+
+    let tAmplitude = 0
+    for (let j = start; j <= end; j++) {
+      const deviation = Math.abs(centered[j] - baseline)
+      if (deviation > tAmplitude) tAmplitude = deviation
+    }
+    tRatios.push(tAmplitude / rAmplitude)
   }
 
-  const peaks = findPeaks(data)
-  if (peaks.length < 2) return { detected: false }
+  const tWaveRatio = tRatios.length > 0 ? median(tRatios) : 0
+  const wideQRS = qrsWidth != null ? qrsWidth : 0
+  const longPR = prInterval != null ? prInterval : 0
 
-  // Calcular amplitude média dos picos (R)
-  const peakAmplitudes = peaks.map(p => data[p])
-  const avgPeakAmp = peakAmplitudes.reduce((a, b) => a + b, 0) / peakAmplitudes.length
-
-  // Detectar ondas T altas e picudas (hipercalémia leve/moderada)
-  // Ondas T ocorrem após o complexo QRS - procurar picos secundários entre batimentos
-  const twavePeaks = findTWaves(data, peaks)
-  const avgTWaveAmp = twavePeaks.length > 0
-    ? twavePeaks.reduce((a, b) => a + b, 0) / twavePeaks.length
-    : 0
-
-  // Critérios de hipercalémia:
-  // 1. Ondas T altas (> 50% da amplitude do QRS) e picudas
-  // 2. QRS alargado (> 120ms)
-  // 3. BRadicardia ou ritmo irregular
   let severity = null
   let description = ''
   let recommendation = ''
 
-  const tWaveRatio = avgPeakAmp > 0 ? Math.abs(avgTWaveAmp / avgPeakAmp) : 0
-
-  if (tWaveRatio > 0.6 && qrsWidth > 140) {
-    // Hipercalémia grave - ondas T muito altas + QRS muito largo
+  if (tWaveRatio > 0.6 && wideQRS > 140) {
     severity = 'critical'
-    description = `Ondas T picudas e elevadas com QRS alargado (${qrsWidth.toFixed(0)}ms). Padrão sugestivo de hipercalémia grave (K+ > 6.5 mEq/L)`
+    description = `Ondas T picudas e elevadas com QRS alargado (${wideQRS.toFixed(0)}ms). Padrão sugestivo de hipercalémia grave (K+ > 6.5 mEq/L)`
     recommendation = 'EMERGÊNCIA: Cálcio gluconato IV, insulina + glicose, bicarbonato. Preparar hemodiálise. Verificar potássio sérico urgentemente.'
   } else if (tWaveRatio > 0.5) {
-    // Hipercalémia moderada - ondas T altas e picudas
     severity = 'warning'
     description = `Ondas T elevadas e picudas detectadas. Possível hipercalémia moderada (K+ 5.5-6.5 mEq/L). Relação T/QRS: ${(tWaveRatio * 100).toFixed(0)}%`
     recommendation = 'Solicitar potássio sérico urgentemente. Remover fontes de K+. Considerar resinas de troca iônica.'
-  } else if (qrsWidth > 130 && prInterval > 200) {
-    // QRS alargado + PR prolongado pode indicar hipercalémia
+  } else if (wideQRS > 130 && longPR > 200) {
     severity = 'warning'
-    description = `QRS alargado (${qrsWidth.toFixed(0)}ms) com PR prolongado (${prInterval.toFixed(0)}ms). Possível hipercalémia em evolução.`
+    description = `QRS alargado (${wideQRS.toFixed(0)}ms) com PR prolongado (${longPR.toFixed(0)}ms). Possível hipercalémia em evolução.`
     recommendation = 'Verificar potássio sérico. Monitoramento cardíaco contínuo. Avaliar função renal.'
   }
 
   if (severity) {
-    return {
-      detected: true,
-      severity,
-      description,
-      recommendation
-    }
+    return { detected: true, severity, description, recommendation }
   }
 
   return { detected: false }
-}
-
-function findTWaves(data, rPeaks) {
-  // Encontrar ondas T - procuram-se picos positivos entre os complexos QRS
-  // Tipicamente 200-400ms após cada onda R
-  const samplingRate = 250 // assumindo 250 Hz
-  const twavePeaks = []
-
-  for (let i = 0; i < rPeaks.length - 1; i++) {
-    const rPeakIdx = rPeaks[i]
-    const nextRPeakIdx = rPeaks[i + 1]
-    const rrInterval = nextRPeakIdx - rPeakIdx
-
-    // Janela para onda T: 200-450ms após pico R (50-112 pontos a 250Hz)
-    const twaveStart = rPeakIdx + Math.floor(0.2 * samplingRate)
-    const twaveEnd = rPeakIdx + Math.min(Math.floor(0.45 * samplingRate), rrInterval - 20)
-
-    if (twaveStart >= data.length || twaveEnd >= data.length || twaveStart >= twaveEnd) continue
-
-    // Encontrar pico na janela T
-    let maxT = -Infinity
-    for (let j = twaveStart; j < twaveEnd; j++) {
-      if (data[j] > maxT) {
-        maxT = data[j]
-      }
-    }
-
-    // Só considerar se o pico T for positivo e significativo
-    const rAmplitude = Math.abs(data[rPeakIdx])
-    if (maxT > rAmplitude * 0.3 && maxT > 0) {
-      twavePeaks.push(maxT)
-    }
-  }
-
-  return twavePeaks
 }
 
 function calculateRiskLevel(diagnoses) {

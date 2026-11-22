@@ -7,6 +7,8 @@ export default function Dashboard({ onNavigate }) {
   const [showComparison, setShowComparison] = useState(false)
 const [normalEcgData, setNormalEcgData] = useState(null)
 const [infarctionEcgData, setInfarctionEcgData] = useState(null)
+const [ecgData, setEcgData] = useState(null)
+const [selectedCase, setSelectedCase] = useState('normal')
 
 const features = [
     {
@@ -386,6 +388,455 @@ const features = [
         </div>
       </div>
 
+      {/* Seletor de Casos de Estudo */}
+      <div className="mt-4 text-sm">
+        <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-2">📚 Casos de Estudo</h4>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setEcgData({ data: normalEcgData?.data, samplingRate: 250, source: 'ECG Normal', isImage: false })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'normal'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="ECG Normal">
+            ✅ Normal
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => 0.1 + Math.sin(2 * Math.PI * (50 / 60) * (i / 250)) * 0.3),
+              samplingRate: 250,
+              source: 'Caso: Bradicardia',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'bradicardia'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="Bradicardia">
+            ✅ Bradicardia
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => 0.1 + Math.sin(2 * Math.PI * (120 / 60) * (i / 250)) * 0.3),
+              samplingRate: 250,
+              source: 'Caso: Taquicardia',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'taquicardia'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="Taquicardia">
+            ✅ Taquicardia
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                const peak = Math.random() > 0.5 ? 0.5 : -0.4
+                return peak * Math.sin(2 * Math.PI * (60 / 60) * t)
+              }),
+              samplingRate: 250,
+              source: 'Caso: Fibrilação Atrial',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'fibrilação_atrial'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="Fibrilação Atrial">
+            ✅ Fibrilação Atrial
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                return 0.1 + Math.sin(2 * Math.PI * (150 / 60) * t) * 0.2 * Math.sin(2 * Math.PI * 3 * t)
+              }),
+              samplingRate: 250,
+              source: 'Caso: Flutter',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'flutter'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="Flutter">
+            ✅ Flutter
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                const prFactor = 1 + 0.2 * Math.sin(2 * Math.PI * (5 / 60) * t)
+                return 0.1 + Math.sin(2 * Math.PI * (70 / 60) * t) * 0.3 * prFactor
+              }),
+              samplingRate: 250,
+              source: 'Caso: BAV 1º Grau',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'bav_1_grau'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="BAV 1º Grau">
+            ✅ BAV 1º Grau
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                if (i % 4 === 0) {
+                  return 0.1 + Math.sin(2 * Math.PI * (60 / 60) * t) * 0.1
+                } else {
+                  return 0.1 + Math.sin(2 * Math.PI * (75 / 60) * t) * 0.3
+                }
+              }),
+              samplingRate: 250,
+              source: 'Caso: BAV 2º Grau',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'bav_2_grau'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="BAV 2º Grau">
+            ✅ BAV 2º Grau
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                return 0.1 + Math.sin(2 * Math.PI * (100 / 60) * t) * 0.2 * (i % 3 === 0 ? 1 : -0.5)
+              }),
+              samplingRate: 250,
+              source: 'Caso: BAV Total',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'bav_total'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="BAV Total">
+            ✅ BAV Total
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                const base = 0.1 + Math.sin(2 * Math.PI * (72 / 60) * t) * 0.3
+                const stElev = i > 2500 / 3 && i < 2500 * 2 / 3 ? 0.3 * Math.sin(2 * Math.PI * (i - 2500 / 3) / (2500 / 3)) : 0
+                return base + stElev
+              }),
+              samplingRate: 250,
+              source: 'Caso: IAM com Supra',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'iam_supra'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="IAM com Supra">
+            ✅ IAM com Supra
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                const base = 0.1 + Math.sin(2 * Math.PI * (72 / 60) * t) * 0.3
+                const stDepr = i > 2500 / 4 && i < 2500 * 3 / 4 ? -0.15 * Math.sin(2 * Math.PI * (i - 2500 / 4) / (2500 / 2)) : 0
+                return base + stDepr
+              }),
+              samplingRate: 250,
+              source: 'Caso: IAM sem Supra',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'iam_sem_supra'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="IAM sem Supra">
+            ✅ IAM sem Supra
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                const tWave = i % 10 === 0 ? 0.5 * Math.sin(2 * Math.PI * (0.25 / 60) * t) : 0
+                return 0.1 + Math.sin(2 * Math.PI * (65 / 60) * t) * 0.3 + tWave
+              }),
+              samplingRate: 250,
+              source: 'Caso: Hipercalemia',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'hipercalemia'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="Hipercalemia">
+            ✅ Hipercalemia
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                const qrsPos = i % 10
+                const uWave = qrsPos > 6 ? 0.3 * Math.sin(2 * Math.PI * (0.1 / 60) * (t - qrsPos * 0.1)) : 0
+                return 0.1 + Math.sin(2 * Math.PI * (55 / 60) * t) * 0.3 + uWave
+              }),
+              samplingRate: 250,
+              source: 'Caso: Hipocalemia',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'hipocalemia'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="Hipocalemia">
+            ✅ Hipocalemia
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                const deltaWave = i % 5 === 0 ? 0.5 * Math.sin(2 * Math.PI * 8 * t) : 0
+                return 0.1 + Math.sin(2 * Math.PI * (80 / 60) * t) * 0.3 + deltaWave
+              }),
+              samplingRate: 250,
+              source: 'Caso: WPW',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'wpw'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="WPW">
+            ✅ WPW
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                return 0.1 + Math.sin(2 * Math.PI * (60 / 60) * t) * 0.3
+              }),
+              samplingRate: 250,
+              source: 'Caso: QT Longo',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'qt_longo'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="QT Longo">
+            ✅ QT Longo
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                const jWave = i % 20 > 15 ? -0.2 * Math.sin(2 * Math.PI * (2 / 60) * (t - (i % 20) * 0.05)) : 0
+                return 0.1 + Math.sin(2 * Math.PI * (65 / 60) * t) * 0.3 + jWave
+              }),
+              samplingRate: 250,
+              source: 'Caso: Brugada',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'brugada'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="Brugada">
+            ✅ Brugada
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                const base = 0.1 + Math.sin(2 * Math.PI * (60 / 60) * t) * 0.3
+                const rotation = 0.1 * Math.sin(2 * Math.PI * (0.1 / 60) * t)
+                return base + rotation
+              }),
+              samplingRate: 250,
+              source: 'Caso: Torsades',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'torsades'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="Torsades de Pointes">
+            ✅ Torsades
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                const qrsDepth = i % 15 > 10 ? -0.3 : 0
+                return 0.1 + Math.sin(2 * Math.PI * (70 / 60) * t) * 0.3 + qrsDepth
+              }),
+              samplingRate: 250,
+              source: 'Caso: Embolia Pulmonar',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'embolia_pulmonar'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="Embolia Pulmonar">
+            ✅ Embolia Pulmonar
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                const stElev = 0.1 * Math.sin(2 * Math.PI * (0.5 / 60) * t)
+                return 0.1 + Math.sin(2 * Math.PI * (68 / 60) * t) * 0.3 + stElev
+              }),
+              samplingRate: 250,
+              source: 'Caso: Pericardite',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'pericardite'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="Pericardite">
+            ✅ Pericardite
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                const stDepr = -0.1 * Math.sin(2 * Math.PI * (0.3 / 60) * t)
+                return 0.1 + Math.sin(2 * Math.PI * (72 / 60) * t) * 0.3 + stDepr
+              }),
+              samplingRate: 250,
+              source: 'Caso: Miocardite',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'miocardite'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="Miocardite">
+            ✅ Miocardite
+          </button>
+          <button
+            onClick={() => setEcgData({
+              data: new Array(2500).fill(0).map((_, i) => {
+                const t = i / 250
+                return 0.1 + Math.sin(2 * Math.PI * (110 / 60) * t) * 0.3 * Math.sin(2 * Math.PI * 0.5 * t)
+              }),
+              samplingRate: 250,
+              source: 'Caso: Choque Séptico',
+              isImage: false
+            })}
+            className={`
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 ${
+                selectedCase === 'choque_setico'
+                  ? 'border-medical-600 text-medical-600'
+                  : ''
+              } transition-all`
+            }
+            title="Choque Séptico">
+            ✅ Choque Séptico
+          </button>
+        </div>
+      </div>
+
+      {/* Exibição do ECG do caso selecionado */}
+      {ecgData && (
+        <div className="mt-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">📊 ECG - {ecgData.source || 'Caso Selecionado'}</h3>
+          <ECGChart
+            data={ecgData.data}
+            title={ecgData.source || 'ECG Normal'}
+            samplingRate={ecgData.samplingRate || 250}
+            highlightRegions={null}
+          />
+        </div>
+      )}
+
+      {/* Outros projetos da área de saúde */}
+      <div className="mt-4 text-sm text-center">
+        <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-2">📦 Outros projetos</h4>
+        <div className="flex justify-center gap-4">
+          <a
+            href="https://corpo-humano-jr7o-git-master-gasperpbs-projects.vercel.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
+          >
+            🩺 Corpo Humano
+          </a>
+          <a
+            href="https://site-diabetes.vercel.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
+          >
+            📊 Controle Diabetes
+          </a>
+        </div>
+      </div>
+
       {/* Comparação de ECG */}
       {showComparison && (
         <div className="mt-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700">
@@ -443,6 +894,8 @@ const features = [
             <span className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer">GitHub</span>
             {' '}|{' '}
             <span className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer">Portfolio</span>
+            {' '}|{' '}
+            <span className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer">gasperpb</span>
           </p>
             <p className="text-gray-400 dark:text-gray-500 text-xs mt-3 italic">
             ⚠️ Para fins educacionais e de referência. Não substitui avaliação médica profissional.

@@ -1,0 +1,16 @@
+# Data e processamento do banco MIT-BIH Arrhythmia Database (PhysioNet)
+
+# Dependências de dados e processamento
+wfdb>=5.0.0
+scipy>=1.13.0
+neurokit2>=0.3.0
+numpy>=2.0.0
+pandas>=2.0.0
+
+# Treinamento do modelo (Random Forest)
+scikit-learn>=1.4.0
+
+# API FastAPI
+fastapi>=0.103.0
+uvicorn>=0.23.0
+pydantic>=2.0.0

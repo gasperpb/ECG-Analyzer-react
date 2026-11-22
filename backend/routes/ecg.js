@@ -1,7 +1,15 @@
 import express from 'express'
-import { analyzeECGData, getSimulatedData } from '../controllers/ecgController.js'
+import {
+  analyzeECGData,
+  getSimulatedData,
+  getMitDbRecords,
+  getMitDbRecord
+} from '../controllers/ecgController.js'
 
 const router = express.Router()
+
+router.get('/mitdb/records', getMitDbRecords)
+router.get('/mitdb/record/:record_name', getMitDbRecord)
 
 /**
  * POST /api/ecg/analyze

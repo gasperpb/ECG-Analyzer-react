@@ -165,30 +165,54 @@ export default function Results({ data, onBack }) {
           <StatsCard
             icon={Heart}
             title="Frequência Cardíaca"
-            value={data.bpm || 72}
-            unit="BPM"
+            value={data.bpm ?? 'N/A'}
+            unit={data.bpm != null ? 'BPM' : ''}
             color="red"
           />
           <StatsCard
             icon={Heart}
             title="Ritmo"
-            value={data.rhythm || 'Sinusal'}
+            value={data.rhythm || 'N/A'}
             color="green"
           />
           <StatsCard
             icon={Heart}
-            title="QT"
-            value={data.qt || '400'}
+            title="QTc"
+            value={data.qtc != null ? Math.round(data.qtc) : (data.qt != null ? Math.round(data.qt) : 'N/A')}
             unit="ms"
             color="blue"
           />
           <StatsCard
             icon={Heart}
             title="PR"
-            value={data.pr || '160'}
+            value={data.pr != null ? Math.round(data.pr) : 'N/A'}
             unit="ms"
             color="purple"
           />
+          {data.aiEngine && (
+            <>
+              <StatsCard
+                icon={Brain}
+                title="Probabilidade da IA"
+                value={Math.round((data.aiEngine.confidence || 0) * 100)}
+                unit="%"
+                color="purple"
+              />
+              <StatsCard
+                icon={Brain}
+                title="Classe Detectida"
+                value={data.aiEngine.prediction || 'N/A'}
+                color="purple"
+              />
+              <StatsCard
+                icon={Brain}
+                title="Confiança do Modelo"
+                value={Math.round((data.aiEngine.confidence || 0) * 100)}
+                unit="%"
+                color="purple"
+              />
+            </>
+          )}
         </div>
       </div>
 
