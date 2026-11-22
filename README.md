@@ -403,4 +403,17 @@ O Vite faz proxy de `/api` para `http://localhost:8080` (`vite.config.js`). Em p
 
 Repositório: https://github.com/Achillesdev/ECG-Analyzer-react
 
+---
+
+## 📦 Outros projetos da área de saúde
+
+Alguns outros projetos desenvolvidos na área de saúde e bem-estar:
+
+| Projeto | Descrição | Link |
+|---------|-----------|------|
+| 🌐 **Corpo Humano** | Interface interativa com anatomía humana e informações de órgãos | https://corpo-humano-jr7o-git-master-gasperpbs-projects.vercel.app/ |
+| 🩺 **Site Diabetes** | Portal com informações, dicas e recursos para controle de diabetes | https://site-diabetes.vercel.app/ |
+
+---
+
 **Licença:** MIT
