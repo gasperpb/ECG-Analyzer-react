@@ -1,463 +1,406 @@
-# 📊 ECG Analyzer
+# ECG Analyzer
 
-Uma interface web moderna e responsiva para análise de eletrocardiogramas (ECG) construída com **React.js 18**, **Vite**, **Tailwind CSS** e **Chart.js**. Backend em **Node.js/Express** com motor de diagnóstico integrado.
+Sistema multiplataforma de apoio à decisão clínica para análise e interpretação automatizada de eletrocardiogramas (ECG). Roda no navegador, combina um motor de diagnóstico baseado em regras com um classificador de arritmias treinado no **MIT-BIH Arrhythmia Database (PhysioNet)** e gera laudos em PDF.
 
-👨‍💻 **Criador:** [Achillesdev](https://github.com/Achillesdev)
-
-## ✨ Características
-
-- ✅ **Interface Responsiva** - Design moderno com Tailwind CSS
-- ✅ **Gráficos Interativos** - Visualização de ECG com Chart.js
-- ✅ **Upload de Arquivos** - CSV, JSON, ECG
-- ✅ **Análise de Imagens** - Processa imagens de ECG (PNG, JPG, BMP)
-- ✅ **Dados Simulados** - Geração de exemplos de ECG para testes
-- ✅ **Análise em Tempo Real** - Backend Node.js integrado
-- ✅ **Sinais Vitais Avançados** - SpO2, Glicose, PA, Temperatura, FR, Hb, K+, Na+, Mg++, Ca++, TSH, Creatinina, Troponina
-- ✅ **Características do ECG** - Seleção manual de padrões visuais (ondas T, ST, delta, bloqueios, etc.)
-- ✅ **100+ Diagnósticos** - Detecção de doenças cardíacas, eletrólitos, endócrinas, respiratórias, renais e 30+ síndromes combinadas
-- ✅ **Correlações Multissistêmicas** - Análise cruzada ECG + sinais vitais + características visuais (30+ síndromes)
-- ✅ **Relatórios Completos** - Diagnósticos, risco, interpretação e recomendações
-- ✅ **Histórico de Análises** - Armazenamento local com exportação para CSV
+> ⚠️ Finalidade educacional e de pesquisa. Não substitui avaliação médica profissional.
 
 ---
 
-## 🚀 Roadmap de Funcionalidades
+## Sumário
 
-### ✅ Implementado
-- [x] **Dark Mode** - Toggle com persistência localStorage e detecção automática do sistema
-- [x] **PDF Profissional** - Laudo formatado com header gradiente, métricas visuais, badges de severidade, assinatura médica (nome + CRM) e instituição
-- [x] **Tutorial Onboarding** - Tooltips first-run com 7 passos e barra de progresso
-- [x] **Responsividade Mobile** - Dark mode em todos componentes, inputs otimizados, modais responsivos
-- [x] **ML/AI Classificação** - Hook `useArrhythmiaClassifier` com detecção de bradicardia, taquicardia, ritmo irregular, ST elevation/depression, T wave inversion, QRS alargado
-- [x] **Integração HL7/FHIR** - Exportação FHIR R4 (JSON) e HL7 v2 com segmentos MSH, PID, OBR, OBX
-- [x] **Histórico de Análises** - localStorage com lista ordenada, visualização, delete e exportação CSV
-- [x] **Comparação de Análises** - Reabrir análises anteriores a partir do histórico
-
-### 📋 Planejado
-- [ ] **Autenticação** - Login com Supabase Auth ou Clerk
-- [ ] **Histórico na Nuvem** - Sync com Vercel Postgres/Supabase
-- [ ] **Compartilhar via Link** - Gerar URL única para cada análise
-- [ ] **Dashboard com Gráficos** - Evolução de BPM/QT ao longo do tempo
-- [ ] **Comparar Análises Lado a Lado** - Visualizar 2+ resultados simultaneamente
-- [ ] **Notificações** - Alertar quando detectar risco alto
-- [ ] **React Router** - Rotas reais com deep links e SEO
-- [ ] **Paginação no Histórico** - Virtualize listas longas
-- [ ] **Multi-lead ECG** - Suporte a 12 derivações
-- [ ] **Laudo com Gráfico ECG** - Incluir imagem do gráfico no PDF
-- [ ] **Assinatura Digital** - Upload de assinatura médica para o PDF
-- [ ] **Integração com PACS** - Envio de laudos para sistemas de imagem hospitalar
-- [ ] **Unit Tests** - Testar motor de diagnóstico e hooks
-- [ ] **PWA** - Service worker para funcionar offline
-- [ ] **Acessibilidade** - ARIA labels, navegação por teclado, screen readers
+1. [Visão geral](#visão-geral)
+2. [Novidades e alterações incluídas](#novidades-e-alterações-incluídas)
+3. [Arquitetura](#arquitetura)
+4. [Tecnologias](#tecnologias)
+5. [Estrutura do projeto](#estrutura-do-projeto)
+6. [Como executar](#como-executar)
+7. [MIT-BIH Arrhythmia Database](#mit-bih-arrhythmia-database)
+8. [API e endpoints](#api-e-endpoints)
+9. [Fluxo de análise](#fluxo-de-análise)
+10. [Capacidades de diagnóstico](#capacidades-de-diagnóstico)
+11. [Validação e testes](#validação-e-testes)
+12. [Configuração](#configuração)
+13. [Estado atual e pendências](#estado-atual-e-pendências)
+14. [Documentação adicional](#documentação-adicional)
+15. [Créditos](#créditos)
 
 ---
 
-## 🚀 Quick Start
+## Visão geral
+
+A solução é composta por três camadas independentes:
+
+| Camada | Tecnologia | Porta | Função |
+|--------|-----------|-------|--------|
+| Frontend | React 18 + Vite + Tailwind CSS | 3000 | Upload de arquivos/imagens, gráficos, formulários, laudos e histórico |
+| Backend Node | Node.js + Express | 8080 | Motor de diagnóstico (regras), sinais vitais, síndromes e orquestração da IA |
+| Backend Python | FastAPI + scikit-learn | 8000 | Classificador Random Forest treinado com o MIT-BIH |
+
+Se a API Python estiver fora do ar, o backend Node continua funcionando com o motor de regras (fallback transparente).
+
+---
+
+## Novidades e alterações incluídas
+
+### 1. Integração com o MIT-BIH Arrhythmia Database
+
+- Novo diretório `backend-python/` com API FastAPI, pipeline de treino, pré-processamento, predição e acesso ao banco.
+- Download automatizado do banco via `wfdb.dl_database()` e registros locais em `backend-python/data/mitdb/`.
+- Classificador **Random Forest** (100 árvores, `class_weight="balanced"`, `random_state=42`) com 8 características por batimento e 5 classes.
+- Modelo serializado em `backend-python/models/ecg_model.pkl`.
+- Novos endpoints Python: `/health`, `/predict`, `/records`, `/record/{record_name}`.
+- Novos endpoints Node (proxy): `GET /api/ecg/mitdb/records` e `GET /api/ecg/mitdb/record/:record_name`.
+- Nova interface no Analyzer: seletor de registros do MIT-BIH e botão **“Analisar no MIT-BIH”**, que carrega o sinal real e dispara a análise completa (motor de regras + IA).
+- Novos cards na tela de resultados: classe detectada pela IA, probabilidade/confiança do modelo.
+
+### 2. Motor de diagnóstico determinístico
+
+- O processamento de sinal foi centralizado em `shared/ecgSignal.js`, usado por frontend e backend.
+- Removidas as implementações antigas e aproximadas de BPM, ritmo, QRS, QT, PR, ST e hipercalemia (que usavam limiares fixos e valores aleatórios como `Math.random()`).
+- Novo pipeline: remoção de baseline, detecção de picos R por energia do derivativo com limiar adaptativo, localização de QRS, PR, QT/QTc, segmento ST e inversão da onda T.
+- Resultado: medições determinísticas, `qtc` e `beatCount` expostos na resposta, além de `Análise Inconclusiva` quando a qualidade do sinal é insuficiente.
+- Detecção de isquemia/infarto agora usa desvio do segmento ST consistente em múltiplos batimentos, com destaque visual das zonas no gráfico.
+
+### 3. Orquestração no backend Node
+
+- `ECGService.analyzeECGData()` passou a ser `async`: executa o motor de regras, chama a API Python e combina os resultados.
+- Resposta ampliada com `currentEngine`, `aiEngine`, `finalDiagnosis` e `aiDiagnosis`.
+- Variável de ambiente `PYTHON_API_URL` (padrão: `http://localhost:8000`).
+- Nova dependência: `axios` no backend para comunicação com a API Python.
+
+### 4. Frontend
+
+- Novo `mitDbService` em `src/services/api.js`.
+- `Analyzer.jsx`: carregamento dos registros MIT-BIH ao montar a página, análise de um registro específico e suporte a override de dados no `handleAnalyze`.
+- `Results.jsx`: métricas mostram `N/A` quando ausentes, QTc em vez de QT e cards da IA.
+- Novas dependências: `docx`, `file-saver`, `jszip`, `xml2js` (exportação/compartilhamento de laudos).
+
+---
+
+## Arquitetura
+
+```text
+Usuário (navegador / celular)
+        │  upload CSV/JSON/imagem, sinais vitais, features, MIT-BIH
+        ▼
+Frontend React (localhost:3000)
+        │  /api/*  (proxy Vite → localhost:8080)
+        ▼
+Backend Node/Express (localhost:8080)
+        ├── Motor de Regras  ── shared/ecgSignal.js
+        ├── Sinais vitais + correlações multissistêmicas
+        └── axios → POST /predict (localhost:8000)
+                        ▼
+             API Python FastAPI (localhost:8000)
+                        ▼
+             Random Forest (models/ecg_model.pkl)
+                        ▼
+             MIT-BIH Arrhythmia Database (data/mitdb)
+```
+
+Resposta combinada:
+
+```json
+{
+  "success": true,
+  "analysis": { "bpm": 78, "rhythm": "Sinusal Normal", "qtc": 405, "pr": 158, "qrs": 88, "beatCount": 12 },
+  "diagnoses": [],
+  "currentEngine": { "...": "resultado das regras" },
+  "aiEngine": { "prediction": "Normal", "confidence": 0.92, "bpm": 78, "rr_interval": 0.77, "qrs_duration": 88 },
+  "finalDiagnosis": { "...": "regras + IA" }
+}
+```
+
+---
+
+## Tecnologias
+
+| Camada | Tecnologias |
+|--------|------------|
+| Frontend | React 18, Vite 4, Tailwind CSS 3, Chart.js 4, react-chartjs-2, Axios, lucide-react, html2canvas, html2pdf.js, docx, jszip, file-saver, qrcode.react, xml2js |
+| Backend Node | Node.js 20, Express 4, CORS, Axios, Multer, UUID |
+| Backend Python | Python 3.14, FastAPI, Uvicorn, Pydantic, NumPy, pandas, SciPy, NeuroKit2, WFDB, scikit-learn |
+| Banco de dados | MIT-BIH Arrhythmia Database (PhysioNet) |
+| Deploy | Vercel (frontend + função serverless `api/index.js`) |
+
+---
+
+## Estrutura do projeto
+
+```text
+ecg-analyzer-react/
+├── api/
+│   └── index.js                      # Entrada serverless (Vercel) → backend/server.js
+├── shared/
+│   └── ecgSignal.js                  # Processamento de sinal compartilhado (front + back)
+├── backend/                          # API Node/Express (porta 8080)
+│   ├── server.js
+│   ├── config/app.js
+│   ├── routes/ecg.js
+│   ├── controllers/ecgController.js
+│   ├── services/ecgService.js        # Orquestra regras + IA Python
+│   ├── models/diagnosticEngine.js    # Motor de diagnóstico (regras + correlações)
+│   ├── validators/ecgValidator.js
+│   ├── middleware/
+│   ├── utils/
+│   ├── constants/
+│   └── package.json
+├── backend-python/                   # API FastAPI + IA (porta 8000)
+│   ├── train.py                      # Baixa o MIT-BIH, treina e salva o modelo
+│   ├── requirements.txt
+│   ├── src/
+│   │   ├── api.py                    # /health, /predict, /records, /record/{name}
+│   │   ├── dataset.py                # Download e leitura dos registros (WFDB)
+│   │   ├── preprocessing.py          # Filtros, picos R, batimentos e rótulos
+│   │   ├── training.py               # Features, Random Forest e serialização
+│   │   └── predictor.py              # Agregação das predições por batimento
+│   ├── data/mitdb/                   # Registros baixados (.dat/.hea/.atr)
+│   ├── models/ecg_model.pkl          # Modelo treinado
+│   └── README.md
+├── src/
+│   ├── components/                   # ECGChart, ECG12LeadChart, PDF, onboarding, etc.
+│   ├── pages/                        # Dashboard, Analyzer, Results, History
+│   ├── services/                     # api.js (inclui mitDbService), diagnosticEngine.js, etc.
+│   ├── hooks/                        # useApi, useHistory, useArrhythmiaClassifier, etc.
+│   ├── utils/
+│   ├── constants/
+│   ├── App.jsx
+│   └── main.jsx
+├── tcc.tex / TCC_ECG_Analyzer.docx   # Monografia do TCC
+├── vite.config.js                    # Proxy /api → localhost:8080
+├── vercel.json
+└── README.md
+```
+
+---
+
+## Como executar
 
 ### Pré-requisitos
 
-- Node.js 16+
-- npm ou yarn
+- Node.js 16+ (testado com 20)
+- Python 3.10+ (testado com 3.14)
+- npm e pip
 
-### Instalação
+### 1. Backend Python (IA + MIT-BIH)
 
 ```bash
-# 1. Frontend
-npm install
-npm run dev
+cd backend-python
+python -m pip install -r requirements.txt
+python train.py                 # baixa o MIT-BIH, treina e salva models/ecg_model.pkl
+python train.py --skip-download # reutiliza os registros já baixados
+uvicorn src.api:app --host 0.0.0.0 --port 8000
+```
 
-# 2. Backend (em outra janela)
+### 2. Backend Node (motor de regras)
+
+```bash
 cd backend
 npm install
-npm run dev
-
-# 3. Acessar em http://localhost:3000
+npm run dev        # http://localhost:8080
 ```
 
-### Build para Produção
+### 3. Frontend
 
 ```bash
-npm run build
-npm run preview
+npm install
+npm run dev        # http://localhost:3000
 ```
+
+Para gerar o build de produção: `npm run build` e `npm run preview`.
 
 ---
 
-## 📁 Estrutura do Projeto
+## MIT-BIH Arrhythmia Database
 
-```
-ecg/
-├── src/                         # Frontend React
-│   ├── components/
-│   │   ├── ECGChart.jsx         # Gráfico de ECG interativo
-│   │   ├── DiagnosticsCard.jsx  # Card de diagnóstico
-│   │   ├── FileUpload.jsx       # Upload drag & drop
-│   │   ├── ImagePreview.jsx     # Pré-visualização de imagem
-│   │   ├── VitalSignsInput.jsx  # Formulário de sinais vitais
-│   │   ├── ECGFeaturesInput.jsx # Seleção de características ECG
-│   │   └── ...
-│   ├── pages/
-│   │   ├── Dashboard.jsx
-│   │   ├── Analyzer.jsx
-│   │   ├── Results.jsx
-│   │   └── History.jsx          # Histórico de análises
-│   └── services/
-│       ├── api.js               # API + extração de imagem
-│       └── diagnosticEngine.js  # Motor de diagnóstico frontend
-│   └── hooks/
-│       ├── useApi.js            # Hook para API
-│       └── useHistory.js        # Hook para histórico (localStorage)
-│
-├── backend/                     # Backend Node.js/Express
-│   ├── controllers/
-│   │   └── ecgController.js
-│   ├── models/
-│   │   └── diagnosticEngine.js  # Motor de diagnóstico principal
-│   ├── services/
-│   │   └── ecgService.js
-│   ├── routes/
-│   │   └── ecg.js
-│   └── server.js
-│
-└── vite.config.js               # Proxy para backend
-```
+O [MIT-BIH Arrhythmia Database](https://physionet.org/content/mitdb/1.0.0/) é a base de referência para arritmias, com registros ambulatoriais de 30 minutos, amostrados a 360 Hz, com anotações manuais de batimento a batimento.
+
+**Como é usado no projeto:**
+
+1. `download_database()` baixa os registros para `backend-python/data/mitdb/` via WFDB.
+2. `read_record()` lê o sinal do canal 0 e as anotações `.atr`.
+3. `extract_beats()` detecta os picos R com NeuroKit2 e extrai RR anterior/posterior, duração, área e amplitude do QRS, além do BPM.
+4. `label_beats_with_annotations()` associa cada batimento detectado ao símbolo MIT-BIH correspondente (tolerância de 0,3 s).
+5. `beats_to_matrix()` monta a matriz de 8 características: `rr_pre`, `rr_post`, `qrs_duration`, `qrs_area`, `r_amp`, `bpm_pre`, `bpm_post`, `rhythm_cv` (NaNs preenchidos pela mediana da coluna).
+6. `train_model()` treina o Random Forest com split estratificado 80/20 (`random_state=42`) e imprime acurácia e `classification_report`.
+7. `ECGPredictor.predict()` classifica cada batimento do sinal enviado pelo Node e agrega o resultado: se houver batimento anômalo com confiança ≥ 0,6, essa classe prevalece; caso contrário, usa a classe majoritária.
+
+| Classe do modelo | Símbolo MIT-BIH |
+|------------------|-----------------|
+| Normal | N |
+| PVC | V |
+| Atrial Premature Beat | A |
+| Left Bundle Branch Block | L |
+| Right Bundle Branch Block | R |
+
+O script de treino reporta a acurácia no conjunto de teste (20%) antes de treinar a versão final com todos os batimentos.
 
 ---
 
-## 🛠️ Tecnologias
+## API e endpoints
 
-| Tecnologia | Propósito |
-|-----------|----------|
-| React 18 | Framework UI |
-| Vite 4 | Build tool + dev server |
-| Tailwind CSS 3 | Styling |
-| Chart.js 4 | Gráficos |
-| Axios 1.6 | HTTP client |
-| lucide-react | Ícones |
-| **Node.js/Express** | **Backend API** |
-| CORS | Comunicação frontend-backend |
+### Backend Node (`:8080`)
 
----
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/api/health` | Health check do backend |
+| GET | `/api/ecg/status` | Status operacional |
+| POST | `/api/ecg/analyze` | Análise completa (ECG + vitais + features + IA) |
+| GET | `/api/ecg/simulated` | Geração de sinal simulado |
+| GET | `/api/ecg/mitdb/records` | Lista registros do MIT-BIH (via Python) |
+| GET | `/api/ecg/mitdb/record/:record_name` | Sinal bruto de um registro (via Python) |
 
-## 🔌 API Endpoints
-
-```
-POST /api/ecg/analyze      # Análise de ECG + sinais vitais + características
-GET  /api/ecg/status       # Status da API
-GET  /api/ecg/simulated    # Dados simulados
-GET  /api/health           # Health check
-GET  /                     # Info da API
-```
-
-### Payload de Análise
+Payload de análise:
 
 ```json
 {
   "samplingRate": 250,
   "duration": 10,
-  "data": [0.02, 0.05, 0.08, ...],
-  "vitalSigns": {
-    "potassium": 6.5,
-    "troponin": 0.8,
-    "glucose": 95,
-    ...
-  },
-  "ecgFeatures": {
-    "tallTWaves": true,
-    "wideQRS": true,
-    ...
-  }
+  "data": [0.02, 0.05, 0.08],
+  "vitalSigns": { "potassium": 6.5, "troponin": 0.8, "glucose": 95 },
+  "ecgFeatures": { "tallTWaves": true, "wideQRS": true }
 }
 ```
 
----
+### Backend Python (`:8000`)
 
-## 📊 Capacidades de Diagnóstico
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/health` | Health check da IA |
+| POST | `/predict` | Classifica um segmento de ECG |
+| GET | `/records` | Lista registros locais do MIT-BIH |
+| GET | `/record/{record_name}` | Retorna sinal, taxa e duração de um registro |
 
-### Diagnósticos por ECG Puro: 12
-- Bradicardia
-- Taquicardia
-- Fibrilação Atrial
-- Flutter Atrial
-- Bloqueio AV (1º, 2º, 3º grau)
-- Complexo QRS Alargado
-- PR Prolongado
-- QT Prolongado
-- Ritmo Sinusal Normal
-- Arritmia Não Especificada
-- Sobrecarga do Ventrículo Esquerdo (HVE)
-- Sobrecarga do Ventrículo Direito (HVD)
+Exemplo:
 
-### Diagnósticos por Eletrólitos: 12
-| Eletrólito | Condições |
-|-----------|----------|
-| **Potássio (K+)** | Hipocalemia, Hipocalemia Grave, Hipercalémia Leve, Hipercalémia Moderada, Hipercalémia Grave |
-| **Sódio (Na+)** | Hiponatremia, Hiponatremia Grave, Hipernatremia, Hipernatremia Grave |
-| **Magnésio (Mg++)** | Hipomagnesemia, Hipomagnesemia Grave, Hipermagnesemia |
-| **Cálcio (Ca++)** | Hipocalcemia, Hipocalcemia Grave, Hipercalcemia, Hipercalcemia Grave (Crise) |
-
-### Diagnósticos por Sinais Vitais: 30+
-| Sinal | Condições |
-|------|----------|
-| **SpO2** | Hipoxemia |
-| **Glicose** | Hipoglicemia, Hiperglicemia |
-| **Pressão Arterial** | Hipertensão, Crise Hipertensiva, Hipotensão |
-| **Temperatura** | Febre Alta, Hipotermia |
-| **Hemoglobina** | Anemia, Anemia Grave |
-| **Frequência Respiratória** | Bradipneia, Taquipneia |
-| **Potássio (K+)** | Hipocalemia, Hipocalemia Grave, Hipercalémia Leve/Moderada/Grave |
-| **Sódio (Na+)** | Hiponatremia, Hiponatremia Grave, Hipernatremia, Hipernatremia Grave |
-| **Magnésio (Mg++)** | Hipomagnesemia, Hipomagnesemia Grave, Hipermagnesemia |
-| **Cálcio (Ca++)** | Hipocalcemia, Hipocalcemia Grave, Hipercalcemia, Hipercalcemia Grave |
-| **TSH** | Hipo/Hipertireoidismo (clínico e subclínico) |
-| **Creatinina** | Função Renal Alterada, Insuficiência Renal, IRA Grave |
-| **Troponina** | Lesão Miocárdica, IAM Provável |
-
-### Diagnósticos por Características do ECG: 20+
-| Categoria | Condições |
-|----------|----------|
-| **Eletrólitos/Metabólicas** | Hipercalémia (leve → grave com Sine Wave), Hipocalemia (ondas U), Hipotermia (Ondas de Osborn) |
-| **Isquemia/IAM** | IAM com Supra de ST, Isquemia sem Supra (SCASSST), Pericardite Aguda |
-| **Ritmo** | Fibrilação Auricular, Flutter Auricular, Bradicardia, Taquicardia |
-| **Condução** | BAV 1º/2º/3º Grau, Bloqueio de Ramo, WPW (onda delta), QT Longo, QT Curto |
-| **Sobrecargas** | Sobrecarga VE, Sobrecarga VD |
-| **Outros** | Efeito Digitálico (ST "cuba"), Baixa Voltagem |
-
-### Síndromes Multissistêmicas (Correlações): 30+
-
-#### Cardíacas
-| Síndrome | Combinação |
-|---------|-----------|
-| **Miocardiopatia Hipertensiva** | PA ↑ + QRS alargado |
-| **Cardiopatia Hipertensiva** | PA ↑ + HVE |
-| **Síndrome Coronária Aguda** | Troponina ↑ + alterações ECG isquémicas |
-| **Miocardite** | Troponina ↑ + febre |
-| **IAM Tipo 2 por Anemia** | Troponina ↑ + Hb ↓↓ |
-| **Possível Choque Cardiogênico** | Taquicardia + PA ↓ + SpO2 ↓ |
-
-#### Respiratórias
-| Síndrome | Combinação |
-|---------|-----------|
-| **Insuficiência Respiratória Aguda** | SpO2 ↓ + FR ↑ |
-| **SDRA** | SpO2 ↓↓ + FR ↑↑ + taquicardia |
-| **Pneumonia Grave** | SpO2 ↓ + febre + taquicardia + FR ↑ |
-| **Sepse Pulmonar** | SpO2 ↓ + febre + PA ↓ |
-| **Depressão Respiratória** | SpO2 ↓ + FR ↓ |
-| **Embolia Pulmonar** | SpO2 ↓ + taquicardia + sobrecarga VD |
-
-#### Metabólicas
-| Síndrome | Combinação |
-|---------|-----------|
-| **Cetoacidose Diabética** | Glicose ↑↑↑ + febre + taquicardia |
-| **Diabetes Descompensado com Infecção** | Glicose ↑ + febre |
-| **Hipoglicemia Sintomática** | Glicose ↓ + taquicardia |
-| **Diabetes com Anemia** | Glicose ↑ + Hb ↓ |
-
-#### Eletrólitos Combinados
-| Síndrome | Combinação |
-|---------|-----------|
-| **Hipocalemia + Hipomagnesemia** | K+ ↓ + Mg++ ↓ |
-| **QT Longo por Hipomagnesemia** | Mg++ ↓ + QT longo |
-| **Arritmia por Hipocalemia** | K+ ↓ + arritmia |
-| **QT Longo por Hipocalcemia** | Ca++ ↓ + QT longo |
-| **Hiponatremia por Infecção (SIADH)** | Na+ ↓ + febre |
-| **Arritmia por Hipomagnesemia** | Mg++ ↓ + arritmia |
-
-#### Tireoide
-| Síndrome | Combinação |
-|---------|-----------|
-| **Tempestade Tireotóxica** | TSH ↓↓ + taquicardia + febre ↑↑ |
-| **Coma Mixedematoso** | TSH ↑↑ + bradicardia + hipotermia |
-| **Fibrilação por Tireotoxicose** | TSH ↓ + FA |
-| **Miocardiopatia por Hipotireoidismo** | TSH ↑ + bradicardia + baixa voltagem |
-| **Hipotireoidismo com Anemia** | TSH ↑ + Hb ↓ |
-
-#### Renais
-| Síndrome | Combinação |
-|---------|-----------|
-| **Hipercalémia Renal** | Creatinina ↑ + K+ ↑ |
-| **IRA com Hipercalémia** | Creatinina ↑↑ + K+ ↑ |
-| **DRC com Anemia** | Creatinina ↑↑ + Hb ↓ |
-| **IRA Pré-Renal** | Creatinina ↑↑ + PA ↓ |
-| **Nefropatia Diabética** | Glicose ↑ + creatinina ↑↑ + K+ ↑ |
-
-#### Multiorgânicas
-| Síndrome | Combinação |
-|---------|-----------|
-| **Choque Séptico com IRA** | Febre + PA ↓ + creatinina ↑ + K+ ↑ |
-| **Choque Séptico com Anemia** | Febre + PA ↓↓ + Hb ↓ |
-| **Miocardite com Compromisso Pulmonar** | Troponina ↑ + SpO2 ↓ + febre |
-| **Sepse** | Febre + PA ↓ + taquicardia |
-| **Choque com Hipotermia** | Temp ↓ + PA ↓ |
-| **Dissociação Pulso-Temperatura** | Febre + bradicardia (Sinal de Faget) |
-| **Taquicardia Febril** | Febre + taquicardia (resposta fisiológica) |
-| **Hipoxemia com Anemia** | SpO2 ↓ + Hb ↓ |
-| **Anemia Grave com Compromisso Respiratório** | FR ↑ + SpO2 ↓ + Hb ↓↓ |
-
----
-
-## 📋 Fluxo Completo de Análise
-
-```
-1. Upload de imagem/arquivo OU dados simulados
-       ↓
-2. Extração de dados (Canvas API para imagens)
-       ↓
-3. Visualização do gráfico ECG
-       ↓
-4. (Opcional) Inserir sinais vitais
-       ↓
-5. (Opcional) Marcar características visuais do ECG
-       ↓
-6. Análise no backend:
-   ├── Análise automática do sinal ECG (BPM, ritmo, intervalos)
-   ├── Análise de sinais vitais (14+ parâmetros)
-   ├── Análise de características marcadas (20+ padrões)
-   └── Correlações multissistêmicas (30+ síndromes)
-       ↓
-7. Resultados com diagnósticos priorizados por severidade
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"data": [0.1, 0.2, 0.3], "sampling_rate": 250}'
 ```
 
 ---
 
-## 📦 Formatos Suportados
+## Fluxo de análise
 
-### Dados
-| Formato | Estrutura |
-|---------|----------|
-| **CSV** | `timestamp(ms),voltagem(mV)` |
-| **JSON** | `{ "samplingRate": 250, "duration": 10, "data": [...] }` |
-
-### Imagens
-| Formato | Descrição |
-|---------|----------|
-| **PNG** | Recomendado, melhor qualidade |
-| **JPG/JPEG** | Comprimido, compatível |
-| **BMP** | Sem compressão |
-
----
-
-## 📅 Histórico de Análises
-
-O sistema armazena automaticamente todas as análises realizadas no `localStorage` do navegador.
-
-### Funcionalidades
-- **Armazenamento automático** - Cada análise é salva com data, métricas e resultados completos
-- **Lista ordenada** - Visualize todas as análises da mais recente para a mais antiga
-- **Detalhes completos** - Clique em qualquer análise para ver os resultados completos
-- **Exportação CSV** - Baixe o histórico completo em formato CSV para análise externa
-- **Gerenciamento** - Delete análises individuais ou limpe todo o histórico
-- **Limite inteligente** - Mantém as 50 análises mais recentes automaticamente
-
-### Dados Armazenados por Análise
-| Campo | Descrição |
-|------|----------|
-| Data | Data e hora da análise |
-| Fonte | Origem dos dados (arquivo, imagem, simulado) |
-| BPM | Frequência cardíaca |
-| Ritmo | Tipo de ritmo identificado |
-| Intervalos | PR, QRS, QT |
-| Nível de Risco | Classificação de severidade |
-| Diagnósticos | Lista completa de diagnósticos |
-| Interpretação | Resumo clínico |
+```text
+1. Entrada: upload (CSV/JSON/PNG/JPG/BMP), dados simulados ou registro do MIT-BIH
+2. Extração: Canvas API para imagens (1 ou 12 derivações) / leitura de arquivo / WFDB
+3. Visualização: gráfico Chart.js com destaque de zonas de supra/infra ST
+4. (Opcional) Sinais vitais e laboratoriais: 14 parâmetros
+5. (Opcional) Características visuais do ECG: 20+ padrões
+6. Backend Node: motor de regras + correlações multissistêmicas
+7. Backend Python: classificação por batimento com Random Forest (MIT-BIH)
+8. Resultado: diagnósticos priorizados, IA, interpretação, recomendações
+9. Saída: laudo em PDF, compartilhamento, histórico local (localStorage)
+```
 
 ---
 
-## 🎨 Configuração
+## Capacidades de diagnóstico
 
-### Variáveis de Ambiente
+- **100+ diagnósticos** combinados.
+- **14 sinais vitais/laboratoriais**: SpO2, glicose, PA, temperatura, FR, hemoglobina, K+, Na+, Mg++, Ca++, TSH, creatinina e troponina.
+- **20+ padrões visuais de ECG**: ondas T, segmento ST, onda delta, bloqueios, sobrecargas e arritmias.
+- **30+ síndromes multissistêmicas**: cardíacas, respiratórias, metabólicas, eletrolíticas, tireoidianas, renais e multiorgânicas.
+- **5 classes de arritmia** reconhecidas pelo modelo treinado no MIT-BIH.
+- **Laudos profissionais**: cabeçalho, métricas, severidade, interpretação, recomendações, assinatura com CRM e instituição.
+- **Histórico local** com até 50 análises, exportação CSV e comparação de resultados.
+- **Dark mode**, onboarding e layout responsivo para uso à beira-leito.
+
+---
+
+## Validação e testes
+
+Não existe ainda uma suíte automatizada de testes configurada. A validação atual é feita em quatro níveis:
+
+**1. Dependências e modelo**
+
+```bash
+python -c "import sklearn, wfdb, neurokit2, scipy, numpy, fastapi; print('deps OK')"
+cd backend-python && python train.py --skip-download
+# imprime amostras por classe, acurácia no teste (20%) e classification_report
+```
+
+**2. API Python**
+
+```bash
+uvicorn src.api:app --host 0.0.0.0 --port 8000
+curl http://localhost:8000/health
+curl http://localhost:8000/records
+curl http://localhost:8000/record/100
+```
+
+**3. API Node**
+
+```bash
+cd backend && npm run dev
+curl http://localhost:8080/api/health
+curl http://localhost:8080/api/ecg/mitdb/records
+curl -X POST http://localhost:8080/api/ecg/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"samplingRate":250,"duration":10,"data":[0.1,0.2,0.3]}'
+```
+
+**4. Frontend e código**
+
+```bash
+npm run lint     # ESLint
+npm run build    # verifica se o bundle de produção compila
+npm run dev      # validação manual: upload, MIT-BIH, vitais, PDF e histórico
+```
+
+Para o TCC, a métrica de acurácia do classificador é obtida diretamente na saída de `python train.py` (split estratificado 80/20). O motor de regras é validado com os sinais do próprio MIT-BIH pela tela “Analisar no MIT-BIH”.
+
+---
+
+## Configuração
 
 ```env
-# .env na raiz
-VITE_API_URL=http://localhost:8080/api
+# .env.local (raiz) — frontend
+VITE_API_URL=/api
+
+# backend/.env — API Node
+PORT=8080
+PYTHON_API_URL=http://localhost:8000
 ```
 
-### Proxy (vite.config.js)
-
-```javascript
-server: {
-  port: 3000,
-  proxy: {
-    '/api': {
-      target: 'http://localhost:8080',
-      changeOrigin: true
-    }
-  }
-}
-```
+O Vite faz proxy de `/api` para `http://localhost:8080` (`vite.config.js`). Em produção na Vercel, `api/index.js` expõe o app Express como função serverless.
 
 ---
 
-## 📝 Scripts
+## Estado atual e pendências
 
-```bash
-npm run dev      # Servidor de desenvolvimento
-npm run build    # Build para produção
-npm run preview  # Preview do build
-npm run lint     # ESLint
-```
-
-### Backend
-
-```bash
-cd backend
-npm run dev      # node --watch server.js
-npm start        # node server.js
-```
+- ✅ Integração MIT-BIH, IA Python, motor determinístico, laudos e histórico funcionais.
+- ⚠️ `npm run lint` ainda reporta 4 erros e 14 avisos (principalmente imports não usados e aspas não escapadas em `Dashboard.jsx` / `useApi.js`).
+- ⚠️ Não há testes unitários automatizados (Jest/Vitest/pytest); a validação é manual e via `train.py`.
+- ⚠️ `backend/package.json` mantém um script `test` placeholder; `npm test` não executa testes reais.
 
 ---
 
-## 🐛 Troubleshooting
+## Documentação adicional
 
-### Backend não responde
-- Verifique se o backend está rodando: `cd backend && npm run dev`
-- Confirme porta 8080 disponível: `netstat -ano | findstr :8080`
-- Teste: `curl http://localhost:8080/api/health`
-
-### Erro ao analisar imagem
-- Use imagens com bom contraste (fundo claro, traço escuro)
-- Verifique o console do navegador (F12) para logs
-- O sistema tem fallback automático se o backend falhar
-
-### Diagnóstico não detecta condição esperada
-- Preencha os **sinais vitais** (K+, troponina, etc.)
-- Marque as **características do ECG** (ondas T, ST, bloqueios, etc.)
-- Quanto mais dados fornecer, mais precisa é a análise
+- [README do backend Node](backend/README.md)
+- [Estrutura do backend](backend/BACKEND_STRUCTURE.md)
+- [README do backend Python / IA](backend-python/README.md)
+- [Guia de sinais vitais](VITAL_SIGNS_GUIDE.md)
+- [Análise de imagens](IMAGE_ANALYSIS.md)
+- [Solução de problemas](TROUBLESHOOTING.md)
+- [Desenvolvimento](DEVELOPMENT.md)
+- Monografia: `tcc.tex` e `TCC_ECG_Analyzer.docx`
 
 ---
 
-## 📚 Documentação Adicional
-
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Guia de resolução de problemas
-- [IMAGE_ANALYSIS.md](IMAGE_ANALYSIS.md) - Detalhes sobre análise de imagens
-- [DEVELOPMENT.md](DEVELOPMENT.md) - Arquitetura técnica
-- [backend/README.md](backend/README.md) - Documentação do backend
-
----
-
-## 📝 Licença
-
-MIT
-
----
-
-## 👨‍💻 Desenvolvedor
-
-**Achillesdev** - [GitHub](https://github.com/Achillesdev)
-
-Desenvolvedor Full Stack especializado em sistemas de análise de saúde e diagnóstico inteligente.
-
-### Créditos
+## Créditos
 
 | Área | Responsável |
-|-----|------------|
-| Arquitetura | Achillesdev |
+|------|------------|
+| Autoria e monografia | Achilles Robson Vasconcelos (Achillesdev) |
 | Frontend React | Achillesdev |
-| Backend Node.js | Achillesdev |
-| Motor de Diagnóstico | Achillesdev |
-| UI/UX Design | Achillesdev |
-| Processamento de Imagem | Achillesdev |
+| Backend Node e motor de diagnóstico | Achillesdev |
+| Backend Python / IA (MIT-BIH) | Achillesdev |
+| Banco de dados | MIT-BIH Arrhythmia Database — PhysioNet |
 
----
+Repositório: https://github.com/Achillesdev/ECG-Analyzer-react
 
-**Desenvolvido com ❤️ por Achillesdev - 2026**
+**Licença:** MIT
