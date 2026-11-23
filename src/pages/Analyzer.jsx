@@ -14,8 +14,11 @@ import diagnosticEngine from '../services/diagnosticEngine'
 const { analyzeIschemia } = diagnosticEngine
 
 const normalizeECGValues = (values) => (
-  Array.isArray(values)
-    ? values.map((value) => Number(value)).filter((value) => Number.isFinite(value))
+  Array.isArray(values) || ArrayBuffer.isView(values)
+    ? Array.from(values)
+      .flatMap((value) => Array.isArray(value) ? value : [value])
+      .map((value) => Number(value))
+      .filter((value) => Number.isFinite(value))
     : []
 )
 
@@ -250,6 +253,10 @@ export default function Analyzer({ onAnalysisComplete }) {
       return
     }
 
+    if (!ecg.data && ecg.samples) ecg.data = ecg.samples
+    if (!ecg.data && ecg.signal) ecg.data = ecg.signal
+    if (!ecg.data && ecg.values) ecg.data = ecg.values
+
     setError('')
     setLoading(true)
 
@@ -273,7 +280,15 @@ export default function Analyzer({ onAnalysisComplete }) {
       } else {
         ecg.data = normalizeECGValues(ecg.data)
         if (ecg.data.length === 0) {
-          throw new Error('Dados de ECG vazios ou inválidos')
+          if (ecg.source === 'Dados Simulados') {
+            const regenerated = generateSimulatedECG()
+            ecg.data = regenerated.data
+            ecg.samplingRate = regenerated.samplingRate
+            ecg.duration = regenerated.duration
+            ecg.bpm = regenerated.bpm
+          } else {
+            throw new Error('Dados de ECG vazios ou inválidos')
+          }
         }
       }
 
