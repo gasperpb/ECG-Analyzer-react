@@ -13,6 +13,12 @@ import { analyzeDiagnosis } from '../services/diagnosticEngine'
 import diagnosticEngine from '../services/diagnosticEngine'
 const { analyzeIschemia } = diagnosticEngine
 
+const normalizeECGValues = (values) => (
+  Array.isArray(values)
+    ? values.map((value) => Number(value)).filter((value) => Number.isFinite(value))
+    : []
+)
+
 // Função para gerar análise simulada (fallback quando backend não responde)
 const generateSimulatedAnalysis = (ecgData, vitalSigns = {}, ecgFeatures = {}) => {
   // Para 12 derivações, usar a derivação I como principal para análise
@@ -147,11 +153,19 @@ export default function Analyzer({ onAnalysisComplete }) {
       // Se é um arquivo CSV ou texto
       else if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
         const text = await file.text()
-        const lines = text.trim().split('\n')
-        const data = lines.slice(1).map(line => {
-          const [_, voltage] = line.split(',')
-          return parseFloat(voltage)
+        const lines = text.trim().split(/\r?\n/).filter((line) => line.trim())
+        const data = lines.flatMap((line, index) => {
+          const columns = line.split(',').map((column) => column.trim())
+          if (index === 0 && columns.length === 2 && !Number.isFinite(Number(columns[1]))) {
+            return []
+          }
+          const voltage = columns.length === 1 ? Number(columns[0]) : Number(columns[1])
+          return Number.isFinite(voltage) ? [voltage] : []
         })
+
+        if (data.length === 0) {
+          throw new Error('O arquivo CSV não contém valores ECG numéricos')
+        }
         
         setEcgData({
           data,
@@ -165,11 +179,39 @@ export default function Analyzer({ onAnalysisComplete }) {
       else if (file.type === 'application/json' || file.name.endsWith('.json')) {
         const text = await file.text()
         const parsed = JSON.parse(text)
-        
-        setEcgData({
-          ...parsed,
-          source: file.name
-        })
+
+        if (parsed.leads && typeof parsed.leads === 'object') {
+          const leads = {}
+          Object.entries(parsed.leads).forEach(([name, values]) => {
+            const normalized = normalizeECGValues(values)
+            if (normalized.length > 0) leads[name] = normalized
+          })
+          const leadNames = Object.keys(leads)
+          if (leadNames.length === 0) {
+            throw new Error('O arquivo JSON não contém derivações ECG válidas')
+          }
+          setEcgData({
+            ...parsed,
+            leads,
+            data: leads.I || leads[leadNames[0]],
+            samplingRate: parsed.samplingRate || 250,
+            duration: parsed.duration || leads.I?.length / 250 || leads[leadNames[0]].length / 250,
+            is12Lead: true,
+            source: file.name
+          })
+        } else {
+          const data = normalizeECGValues(parsed.data)
+          if (data.length === 0) {
+            throw new Error('O arquivo JSON não contém dados ECG numéricos')
+          }
+          setEcgData({
+            ...parsed,
+            data,
+            samplingRate: parsed.samplingRate || 250,
+            duration: parsed.duration || data.length / 250,
+            source: file.name
+          })
+        }
         setAnalysisMethod('file')
       }
       else {
@@ -214,11 +256,25 @@ export default function Analyzer({ onAnalysisComplete }) {
     try {
       // Validar dados
       if (ecg.is12Lead) {
-        if (!ecg.leads || Object.keys(ecg.leads).length === 0) {
+        const normalizedLeads = {}
+        if (ecg.leads) {
+          Object.entries(ecg.leads).forEach(([name, values]) => {
+            const normalized = normalizeECGValues(values)
+            if (normalized.length > 0) normalizedLeads[name] = normalized
+          })
+        }
+        if (Object.keys(normalizedLeads).length === 0) {
           throw new Error('Dados de ECG (12 derivações) vazios ou inválidos')
         }
-      } else if (!ecg.data || ecg.data.length === 0) {
-        throw new Error('Dados de ECG vazios ou inválidos')
+        ecg.leads = normalizedLeads
+        if (!ecg.data || ecg.data.length === 0) {
+          ecg.data = normalizedLeads.I || normalizedLeads[Object.keys(normalizedLeads)[0]]
+        }
+      } else {
+        ecg.data = normalizeECGValues(ecg.data)
+        if (ecg.data.length === 0) {
+          throw new Error('Dados de ECG vazios ou inválidos')
+        }
       }
 
       const primaryData = ecg.data && ecg.data.length > 200
@@ -253,7 +309,7 @@ export default function Analyzer({ onAnalysisComplete }) {
         }
 
         // Rodar análise de isquemia local (frontend) independente do backend
-        const ecgInput = { data: primaryData, samplingRate: ecgData.samplingRate || 250 }
+        const ecgInput = { data: primaryData, samplingRate: ecg.samplingRate || 250 }
         const localIschemia = analyzeIschemia(ecgInput, ecgFeatures)
 
         // Se o frontend detectou isquemia/infarto e o backend não, mesclar
@@ -284,9 +340,9 @@ export default function Analyzer({ onAnalysisComplete }) {
         console.warn('Backend não disponível, usando análise simulada:', apiError.message)
         
         // Fallback: gerar análise simulada com sinais vitais e características
-        const simulatedResults = generateSimulatedAnalysis(ecgData, vitalSigns, ecgFeatures)
-        simulatedResults.ecgChart = ecgData
-        simulatedResults.source = ecgData.source || 'Dados do Usuário'
+        const simulatedResults = generateSimulatedAnalysis(ecg, vitalSigns, ecgFeatures)
+        simulatedResults.ecgChart = ecg
+        simulatedResults.source = ecg.source || 'Dados do Usuário'
         simulatedResults.isSimulated = true
         
         onAnalysisComplete(simulatedResults)
