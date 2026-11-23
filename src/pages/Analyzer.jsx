@@ -247,7 +247,14 @@ export default function Analyzer({ onAnalysisComplete }) {
   }
 
   const handleAnalyze = async (ecgDataOverride = null) => {
-    const ecg = ecgDataOverride || ecgData
+    const overrideLooksLikeEcg = ecgDataOverride &&
+      typeof ecgDataOverride === 'object' &&
+      (
+        Object.prototype.hasOwnProperty.call(ecgDataOverride, 'data') ||
+        Object.prototype.hasOwnProperty.call(ecgDataOverride, 'leads') ||
+        Object.prototype.hasOwnProperty.call(ecgDataOverride, 'samplingRate')
+      )
+    const ecg = overrideLooksLikeEcg ? ecgDataOverride : ecgData
     if (!ecg) {
       setError('Nenhum dado de ECG disponível')
       return
